@@ -1,119 +1,45 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity 0.7.5;
+pragma solidity 0.7.4;
 
 interface IOwnable {
 
-  function owner() external view returns (address);
+    function owner() external view returns (address);
 
-  function renounceOwnership() external;
+    function renounceOwnership() external;
   
-  function transferOwnership( address newOwner_ ) external;
+    function transferOwnership( address newOwner_ ) external;
 }
 
 contract Ownable is IOwnable {
     
-  address internal _owner;
+    address internal _owner;
 
-  event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-  /**
-   * @dev Initializes the contract setting the deployer as the initial owner.
-   */
-  constructor () {
-    _owner = msg.sender;
-    emit OwnershipTransferred( address(0), _owner );
-  }
+    constructor () {
+        _owner = msg.sender;
+        emit OwnershipTransferred( address(0), _owner );
+    }
 
-  /**
-   * @dev Returns the address of the current owner.
-   */
-  function owner() public view override returns (address) {
-    return _owner;
-  }
+    function owner() public view override returns (address) {
+        return _owner;
+    }
 
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require( _owner == msg.sender, "Ownable: caller is not the owner" );
-    _;
-  }
+    modifier onlyOwner() {
+        require( _owner == msg.sender, "Ownable: caller is not the owner" );
+        _;
+    }
 
-  /**
-   * @dev Leaves the contract without owner. It will not be possible to call
-   * `onlyOwner` functions anymore. Can only be called by the current owner.
-   *
-   * NOTE: Renouncing ownership will leave the contract without an owner,
-   * thereby removing any functionality that is only available to the owner.
-   */
-  function renounceOwnership() public virtual override onlyOwner() {
-    emit OwnershipTransferred( _owner, address(0) );
-    _owner = address(0);
-  }
+    function renounceOwnership() public virtual override onlyOwner() {
+        emit OwnershipTransferred( _owner, address(0) );
+        _owner = address(0);
+    }
 
-  /**
-   * @dev Transfers ownership of the contract to a new account (`newOwner`).
-   * Can only be called by the current owner.
-   */
-  function transferOwnership( address newOwner_ ) public virtual override onlyOwner() {
-    require( newOwner_ != address(0), "Ownable: new owner is the zero address");
-    emit OwnershipTransferred( _owner, newOwner_ );
-    _owner = newOwner_;
-  }
-}
-
-interface IBondingCalculator {
-
-  function calcDebtRatio( uint pendingDebtDue_, uint managedTokenTotalSupply_ ) external pure returns ( uint debtRatio_ );
-
-  function calcBondPremium( uint debtRatio_, uint bondScalingFactor ) external pure returns ( uint premium_ );
-
-  function calcPrincipleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) external pure returns ( uint principleValuation_ );
-
-  function principleValuation( address principleTokenAddress_, uint amountDeposited_ ) external view returns ( uint principleValuation_ );
-
-  function calculateBondInterest( address treasury_, address principleTokenAddress_, uint amountDeposited_, uint bondScalingFactor ) external returns ( uint interestDue_ );
-}
-
-interface IPrincipleDepository {
-
-  function getCurrentBondTerm() external returns ( uint, uint );
-
-  function treasury() external returns ( address );
-
-  function bondCalculator() external returns ( address );
-
-  function depositorInfo( address ) external returns ( uint, uint, uint );
-
-  function addPrincipleToken( address newPrincipleToken_ ) external returns ( bool );
-
-  function setTreasury( address newTreasury_ ) external returns ( bool );
-  
-  function setBondCalculator( address bondCalculator_ ) external returns ( bool );
-
-  function addBondTerm( uint256 bondScalingFactor_, uint256 bondingPeriodInBlocks_ ) external returns ( bool );
-
-  function getDepositorInfo( address depositorAddress_) external view returns ( uint principleAmount_, uint interestDue_, uint bondMaturationBlock_);
-
-  function depositBondPrinciple( address bondPrincipleTokenToDeposit_, uint256 amountToDeposit_ ) external returns ( bool );
-
-  function depositBondPrincipleWithPermit( address bondPrincipleTokenToDeposit_, uint256 amountToDeposit_, uint256 deadline, uint8 v, bytes32 r, bytes32 s ) external returns ( bool );
-
-  function withdrawPrincipleAndForfeitInterest( address bondPrincipleToWithdraw_ ) external returns ( bool );
-
-  function redeemBond(address bondPrincipleToRedeem_ ) external returns ( bool );
-}
-
-interface ITreasury {
-
-  function getBondingCalculator() external returns ( address );
-  function payDebt( address depositor_ ) external returns ( bool );
-  function getTimelockEndBlock() external returns ( uint );
-  function getManagedToken() external returns ( address );
-  function getDebtAmountDue() external returns ( uint );
-  function incurDebt( uint principieTokenAmountDeposited_, uint bondScalingValue_ ) external returns ( bool );
-  function depositPrinciple( uint depositAmount_ ) external returns ( bool );
-
+    function transferOwnership( address newOwner_ ) public virtual override onlyOwner() {
+        require( newOwner_ != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred( _owner, newOwner_ );
+        _owner = newOwner_;
+    }
 }
 
 library SafeMath {
@@ -183,9 +109,6 @@ library SafeMath {
         return div( mul( total_, percentage_ ), 1000 );
     }
 
-    /*
-     * Expects percentage to be trailed by 00,
-    */
     function substractPercentage( uint256 total_, uint8 percentageToSub_ ) internal pure returns ( uint256 result_ ) {
         return sub( total_, div( mul( total_, percentageToSub_ ), 1000 ) );
     }
@@ -194,11 +117,6 @@ library SafeMath {
         return div( mul(part_, 100) , total_ );
     }
 
-    /**
-     * Taken from Hypersonic https://github.com/M2629/HyperSonic/blob/main/Math.sol
-     * @dev Returns the average of two numbers. The result is rounded towards
-     * zero.
-     */
     function average(uint256 a, uint256 b) internal pure returns (uint256) {
         // (a + b) / 2 can overflow, so we distribute
         return (a / 2) + (b / 2) + ((a % 2 + b % 2) / 2);
@@ -214,23 +132,7 @@ library SafeMath {
 }
 
 library Address {
-    /**
-     * @dev Returns true if `account` is a contract.
-     *
-     * [IMPORTANT]
-     * ====
-     * It is unsafe to assume that an address for which this function returns
-     * false is an externally-owned account (EOA) and not a contract.
-     *
-     * Among others, `isContract` will return false for the following
-     * types of addresses:
-     *
-     *  - an externally-owned account
-     *  - a contract in construction
-     *  - an address where a contract will be created
-     *  - an address where a contract lived, but was destroyed
-     * ====
-     */
+
     function isContract(address account) internal view returns (bool) {
         // This method relies in extcodesize, which returns 0 for contracts in
         // construction, since the code is only stored at the end of the
@@ -242,22 +144,6 @@ library Address {
         return size > 0;
     }
 
-    /**
-     * @dev Replacement for Solidity's `transfer`: sends `amount` wei to
-     * `recipient`, forwarding all available gas and reverting on errors.
-     *
-     * https://eips.ethereum.org/EIPS/eip-1884[EIP1884] increases the gas cost
-     * of certain opcodes, possibly making contracts go over the 2300 gas limit
-     * imposed by `transfer`, making them unable to receive funds via
-     * `transfer`. {sendValue} removes this limitation.
-     *
-     * https://diligence.consensys.net/posts/2019/09/stop-using-soliditys-transfer-now/[Learn more].
-     *
-     * IMPORTANT: because control is transferred to `recipient`, care must be
-     * taken to not create reentrancy vulnerabilities. Consider using
-     * {ReentrancyGuard} or the
-     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
-     */
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
 
@@ -266,63 +152,18 @@ library Address {
         require(success, "Address: unable to send value, recipient may have reverted");
     }
 
-    /**
-     * @dev Performs a Solidity function call using a low level `call`. A
-     * plain`call` is an unsafe replacement for a function call: use this
-     * function instead.
-     *
-     * If `target` reverts with a revert reason, it is bubbled up by this
-     * function (like regular Solidity function calls).
-     *
-     * Returns the raw returned data. To convert to the expected return value,
-     * use https://solidity.readthedocs.io/en/latest/units-and-global-variables.html?highlight=abi.decode#abi-encoding-and-decoding-functions[`abi.decode`].
-     *
-     * Requirements:
-     *
-     * - `target` must be a contract.
-     * - calling `target` with `data` must not revert.
-     *
-     * _Available since v3.1._
-     */
     function functionCall(address target, bytes memory data) internal returns (bytes memory) {
       return functionCall(target, data, "Address: low-level call failed");
     }
 
-    /**
-     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`], but with
-     * `errorMessage` as a fallback revert reason when `target` reverts.
-     *
-     * _Available since v3.1._
-     */
     function functionCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
     }
 
-    /**
-     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
-     * but also transferring `value` wei to `target`.
-     *
-     * Requirements:
-     *
-     * - the calling contract must have an ETH balance of at least `value`.
-     * - the called Solidity function must be `payable`.
-     *
-     * _Available since v3.1._
-     */
     function functionCallWithValue(address target, bytes memory data, uint256 value) internal returns (bytes memory) {
         return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
     }
 
-    /**
-     * @dev Same as {xref-Address-functionCallWithValue-address-bytes-uint256-}[`functionCallWithValue`], but
-     * with `errorMessage` as a fallback revert reason when `target` reverts.
-     *
-     * _Available since v3.1._
-     */
-    // function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
-    //     require(address(this).balance >= value, "Address: insufficient balance for call");
-    //     return _functionCallWithValue(target, data, value, errorMessage);
-    // }
     function functionCallWithValue(address target, bytes memory data, uint256 value, string memory errorMessage) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
         require(isContract(target), "Address: call to non-contract");
@@ -355,22 +196,10 @@ library Address {
         }
     }
 
-  /**
-     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
-     * but performing a static call.
-     *
-     * _Available since v3.3._
-     */
     function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
         return functionStaticCall(target, data, "Address: low-level static call failed");
     }
 
-    /**
-     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
-     * but performing a static call.
-     *
-     * _Available since v3.3._
-     */
     function functionStaticCall(address target, bytes memory data, string memory errorMessage) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
 
@@ -379,22 +208,10 @@ library Address {
         return _verifyCallResult(success, returndata, errorMessage);
     }
 
-    /**
-     * @dev Same as {xref-Address-functionCall-address-bytes-}[`functionCall`],
-     * but performing a delegate call.
-     *
-     * _Available since v3.3._
-     */
     function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
         return functionDelegateCall(target, data, "Address: low-level delegate call failed");
     }
 
-    /**
-     * @dev Same as {xref-Address-functionCall-address-bytes-string-}[`functionCall`],
-     * but performing a delegate call.
-     *
-     * _Available since v3.3._
-     */
     function functionDelegateCall(address target, bytes memory data, string memory errorMessage) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
 
@@ -441,278 +258,100 @@ library Address {
 }
 
 interface IERC20 {
+    function decimals() external view returns (uint8);
 
-  function decimals() external view returns (uint8);
-  /**
-   * @dev Returns the amount of tokens in existence.
-   */
-  function totalSupply() external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 
-  /**
-   * @dev Returns the amount of tokens owned by `account`.
-   */
-  function balanceOf(address account) external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
 
-  /**
-   * @dev Moves `amount` tokens from the caller's account to `recipient`.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transfer(address recipient, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
 
-  /**
-   * @dev Returns the remaining number of tokens that `spender` will be
-   * allowed to spend on behalf of `owner` through {transferFrom}. This is
-   * zero by default.
-   *
-   * This value changes when {approve} or {transferFrom} are called.
-   */
-  function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
-  /**
-   * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * IMPORTANT: Beware that changing an allowance with this method brings the risk
-   * that someone may use both the old and the new allowance by unfortunate
-   * transaction ordering. One possible solution to mitigate this race
-   * condition is to first reduce the spender's allowance to 0 and set the
-   * desired value afterwards:
-   * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-   *
-   * Emits an {Approval} event.
-   */
-  function approve(address spender, uint256 amount) external returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
 
-  /**
-   * @dev Moves `amount` tokens from `sender` to `recipient` using the
-   * allowance mechanism. `amount` is then deducted from the caller's
-   * allowance.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 
-  /**
-   * @dev Emitted when `value` tokens are moved from one account (`from`) to
-   * another (`to`).
-   *
-   * Note that `value` may be zero.
-   */
-  event Transfer(address indexed from, address indexed to, uint256 value);
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
-  /**
-   * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-   * a call to {approve}. `value` is the new allowance.
-   */
-  event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
-abstract contract ERC20
-  is 
-    IERC20
-  {
+abstract contract ERC20 is IERC20 {
 
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  // TODO comment actual hash value.
-  bytes32 constant private ERC20TOKEN_ERC1820_INTERFACE_ID = keccak256( "ERC20Token" );
+    // TODO comment actual hash value.
+    bytes32 constant private ERC20TOKEN_ERC1820_INTERFACE_ID = keccak256( "ERC20Token" );
     
-  // Present in ERC777
-  mapping (address => uint256) internal _balances;
+    mapping (address => uint256) internal _balances;
 
-  // Present in ERC777
-  mapping (address => mapping (address => uint256)) internal _allowances;
+    mapping (address => mapping (address => uint256)) internal _allowances;
 
-  // Present in ERC777
-  uint256 internal _totalSupply;
+    uint256 internal _totalSupply;
 
-  // Present in ERC777
-  string internal _name;
+    string internal _name;
     
-  // Present in ERC777
-  string internal _symbol;
+    string internal _symbol;
     
-  // Present in ERC777
-  uint8 internal _decimals;
+    uint8 internal _decimals;
 
-  /**
-   * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
-   * a default value of 18.
-   *
-   * To select a different value for {decimals}, use {_setupDecimals}.
-   *
-   * All three of these values are immutable: they can only be set once during
-   * construction.
-   */
-  constructor (string memory name_, string memory symbol_, uint8 decimals_) {
-    _name = name_;
-    _symbol = symbol_;
-    _decimals = decimals_;
-  }
+    constructor (string memory name_, string memory symbol_, uint8 decimals_) {
+        _name = name_;
+        _symbol = symbol_;
+        _decimals = decimals_;
+    }
 
-  /**
-   * @dev Returns the name of the token.
-   */
-  // Present in ERC777
-  function name() public view returns (string memory) {
-    return _name;
-  }
+    function name() public view returns (string memory) {
+        return _name;
+    }
 
-  /**
-   * @dev Returns the symbol of the token, usually a shorter version of the
-   * name.
-   */
-  // Present in ERC777
-  function symbol() public view returns (string memory) {
-    return _symbol;
-  }
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
 
-  /**
-   * @dev Returns the number of decimals used to get its user representation.
-   * For example, if `decimals` equals `2`, a balance of `505` tokens should
-   * be displayed to a user as `5,05` (`505 / 10 ** 2`).
-   *
-   * Tokens usually opt for a value of 18, imitating the relationship between
-   * Ether and Wei. This is the value {ERC20} uses, unless {_setupDecimals} is
-   * called.
-   *
-   * NOTE: This information is only used for _display_ purposes: it in
-   * no way affects any of the arithmetic of the contract, including
-   * {IERC20-balanceOf} and {IERC20-transfer}.
-   */
-  // Present in ERC777
-  function decimals() public view override returns (uint8) {
-    return _decimals;
-  }
+    function decimals() public view override returns (uint8) {
+        return _decimals;
+    }
 
-  /**
-   * @dev See {IERC20-totalSupply}.
-   */
-  // Present in ERC777
-  function totalSupply() public view override returns (uint256) {
-    return _totalSupply;
-  }
+    function totalSupply() public view override returns (uint256) {
+        return _totalSupply;
+    }
 
-  /**
-   * @dev See {IERC20-balanceOf}.
-   */
-  // Present in ERC777
-  function balanceOf(address account) public view virtual override returns (uint256) {
-    return _balances[account];
-  }
+    function balanceOf(address account) public view virtual override returns (uint256) {
+        return _balances[account];
+    }
 
-  /**
-   * @dev See {IERC20-transfer}.
-   *
-   * Requirements:
-   *
-   * - `recipient` cannot be the zero address.
-   * - the caller must have a balance of at least `amount`.
-   */
-  // Overrideen in ERC777
-  // Confirm that this behavior changes 
-  function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
-    _transfer(msg.sender, recipient, amount);
-    return true;
-  }
+    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+        _transfer(msg.sender, recipient, amount);
+        return true;
+    }
 
-    /**
-     * @dev See {IERC20-allowance}.
-     */
-    // Present in ERC777
     function allowance(address owner, address spender) public view virtual override returns (uint256) {
         return _allowances[owner][spender];
     }
 
-    /**
-     * @dev See {IERC20-approve}.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     */
-    // Present in ERC777
     function approve(address spender, uint256 amount) public virtual override returns (bool) {
         _approve(msg.sender, spender, amount);
         return true;
     }
 
-    /**
-     * @dev See {IERC20-transferFrom}.
-     *
-     * Emits an {Approval} event indicating the updated allowance. This is not
-     * required by the EIP. See the note at the beginning of {ERC20}.
-     *
-     * Requirements:
-     *
-     * - `sender` and `recipient` cannot be the zero address.
-     * - `sender` must have a balance of at least `amount`.
-     * - the caller must have allowance for ``sender``'s tokens of at least
-     * `amount`.
-     */
-    // Present in ERC777
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
     }
 
-    /**
-     * @dev Atomically increases the allowance granted to `spender` by the caller.
-     *
-     * This is an alternative to {approve} that can be used as a mitigation for
-     * problems described in {IERC20-approve}.
-     *
-     * Emits an {Approval} event indicating the updated allowance.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     */
     function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
         _approve(msg.sender, spender, _allowances[msg.sender][spender].add(addedValue));
         return true;
     }
 
-    /**
-     * @dev Atomically decreases the allowance granted to `spender` by the caller.
-     *
-     * This is an alternative to {approve} that can be used as a mitigation for
-     * problems described in {IERC20-approve}.
-     *
-     * Emits an {Approval} event indicating the updated allowance.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     * - `spender` must have allowance for the caller of at least
-     * `subtractedValue`.
-     */
     function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
         _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
         return true;
     }
 
-  /**
-   * @dev Moves tokens `amount` from `sender` to `recipient`.
-   *
-   * This is internal function is equivalent to {transfer}, and can be used to
-   * e.g. implement automatic token fees, slashing mechanisms, etc.
-   *
-   * Emits a {Transfer} event.
-   *
-   * Requirements:
-   *
-   * - `sender` cannot be the zero address.
-   * - `recipient` cannot be the zero address.
-   * - `sender` must have a balance of at least `amount`.
-   */
   function _transfer(address sender, address recipient, uint256 amount) internal virtual {
     require(sender != address(0), "ERC20: transfer from the zero address");
     require(recipient != address(0), "ERC20: transfer to the zero address");
@@ -724,16 +363,6 @@ abstract contract ERC20
     emit Transfer(sender, recipient, amount);
   }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-     * the total supply.
-     *
-     * Emits a {Transfer} event with `from` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `to` cannot be the zero address.
-     */
-    // Present in ERC777
     function _mint(address account_, uint256 ammount_) internal virtual {
         require(account_ != address(0), "ERC20: mint to the zero address");
         _beforeTokenTransfer(address( this ), account_, ammount_);
@@ -742,18 +371,6 @@ abstract contract ERC20
         emit Transfer(address( this ), account_, ammount_);
     }
 
-    /**
-     * @dev Destroys `amount` tokens from `account`, reducing the
-     * total supply.
-     *
-     * Emits a {Transfer} event with `to` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
-     * - `account` must have at least `amount` tokens.
-     */
-    // Present in ERC777
     function _burn(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
@@ -764,20 +381,6 @@ abstract contract ERC20
         emit Transfer(account, address(0), amount);
     }
 
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the `owner` s tokens.
-     *
-     * This internal function is equivalent to `approve`, and can be used to
-     * e.g. set automatic allowances for certain subsystems, etc.
-     *
-     * Emits an {Approval} event.
-     *
-     * Requirements:
-     *
-     * - `owner` cannot be the zero address.
-     * - `spender` cannot be the zero address.
-     */
-    // Present in ERC777
     function _approve(address owner, address spender, uint256 amount) internal virtual {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
@@ -786,59 +389,11 @@ abstract contract ERC20
         emit Approval(owner, spender, amount);
     }
 
-    /**
-     * @dev Sets {decimals} to a value other than the default one of 18.
-     *
-     * WARNING: This function should only be called from the constructor. Most
-     * applications that interact with token contracts will not expect
-     * {decimals} to ever change, and may work incorrectly if it does.
-     */
-    // Considering deprication to reduce size of bytecode as changing _decimals to internal acheived the same functionality.
-    // function _setupDecimals(uint8 decimals_) internal {
-    //     _decimals = decimals_;
-    // }
-
-  /**
-   * @dev Hook that is called before any transfer of tokens. This includes
-   * minting and burning.
-   *
-   * Calling conditions:
-   *
-   * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-   * will be to transferred to `to`.
-   * - when `from` is zero, `amount` tokens will be minted for `to`.
-   * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
-   * - `from` and `to` are never both zero.
-   *
-   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-   */
-  // Present in ERC777
   function _beforeTokenTransfer( address from_, address to_, uint256 amount_ ) internal virtual { }
 }
 
 interface IERC2612Permit {
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over `owner`'s tokens,
-     * given `owner`'s signed approval.
-     *
-     * IMPORTANT: The same issues {IERC20-approve} has related to transaction
-     * ordering also apply here.
-     *
-     * Emits an {Approval} event.
-     *
-     * Requirements:
-     *
-     * - `owner` cannot be the zero address.
-     * - `spender` cannot be the zero address.
-     * - `deadline` must be a timestamp in the future.
-     * - `v`, `r` and `s` must be a valid `secp256k1` signature from `owner`
-     * over the EIP712-formatted function arguments.
-     * - the signature must use ``owner``'s current nonce (see {nonces}).
-     *
-     * For more information on the signature format, see the
-     * https://eips.ethereum.org/EIPS/eip-2612#specification[relevant EIP
-     * section].
-     */
+
     function permit(
         address owner,
         address spender,
@@ -849,13 +404,6 @@ interface IERC2612Permit {
         bytes32 s
     ) external;
 
-    /**
-     * @dev Returns the current ERC2612 nonce for `owner`. This value must be
-     * included whenever a signature is generated for {permit}.
-     *
-     * Every successful call to {permit} increases ``owner``'s nonce by one. This
-     * prevents a signature from being used multiple times.
-     */
     function nonces(address owner) external view returns (uint256);
 }
 
@@ -910,10 +458,6 @@ abstract contract ERC20Permit is ERC20, IERC2612Permit {
         );
     }
 
-    /**
-     * @dev See {IERC2612Permit-permit}.
-     *
-     */
     function permit(
         address owner,
         address spender,
@@ -937,38 +481,10 @@ abstract contract ERC20Permit is ERC20, IERC2612Permit {
         _approve(owner, spender, amount);
     }
 
-    /**
-     * @dev See {IERC2612Permit-nonces}.
-     */
     function nonces(address owner) public view override returns (uint256) {
         return _nonces[owner].current();
     }
 }
-
-/**
- * @dev Implementation of the {IERC20} interface.
- *
- * This implementation is agnostic to the way tokens are created. This means
- * that a supply mechanism has to be added in a derived contract using {_mint}.
- * For a generic mechanism see {ERC20PresetMinterPauser}.
- *
- * TIP: For a detailed writeup see our guide
- * https://forum.zeppelin.solutions/t/how-to-implement-erc20-supply-mechanisms/226[How
- * to implement supply mechanisms].
- *
- * We have followed general OpenZeppelin guidelines: functions revert instead
- * of returning `false` on failure. This behavior is nonetheless conventional
- * and does not conflict with the expectations of ERC20 applications.
- *
- * Additionally, an {Approval} event is emitted on calls to {transferFrom}.
- * This allows applications to reconstruct the allowance for all accounts just
- * by listening to said events. Other implementations of the EIP may not emit
- * these events, as it isn't required by the specification.
- *
- * Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
- * functions have been added to mitigate the well-known issues around setting
- * allowances. See {IERC20-approve}.
- */
 
 library SafeERC20 {
     using SafeMath for uint256;
@@ -982,18 +498,8 @@ library SafeERC20 {
         _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
     }
 
-    /**
-     * @dev Deprecated. This function has issues similar to the ones found in
-     * {IERC20-approve}, and its usage is discouraged.
-     *
-     * Whenever possible, use {safeIncreaseAllowance} and
-     * {safeDecreaseAllowance} instead.
-     */
     function safeApprove(IERC20 token, address spender, uint256 value) internal {
-        // safeApprove should only be called when setting an initial allowance,
-        // or when resetting it to zero. To increase and decrease it, use
-        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
-        // solhint-disable-next-line max-line-length
+
         require((value == 0) || (token.allowance(address(this), spender) == 0),
             "SafeERC20: approve from non-zero to non-zero allowance"
         );
@@ -1010,16 +516,7 @@ library SafeERC20 {
         _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
     }
 
-    /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its variants).
-     */
     function _callOptionalReturn(IERC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
-        // the target address contains contract code and also asserts for success in the low-level call.
 
         bytes memory returndata = address(token).functionCall(data, "SafeERC20: low-level call failed");
         if (returndata.length > 0) { // Return data is optional
@@ -1051,166 +548,517 @@ interface IUniswapV2ERC20 {
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
-contract OlyPrincipleDepository is IPrincipleDepository, Ownable {
-
-  using SafeERC20 for IERC20;
-  using SafeMath for uint;
-
-  struct BondTerm {
-    uint256 bondScalingValue;
-    uint256 bondingPeriodInBlocks;
-  }
-
-  struct DepositInfo {
-    uint256 principleAmount;
-    uint256 interestDue;
-    uint256 bondMaturationBlock;
-  }
-
-  BondTerm public override getCurrentBondTerm;
-
-  address public override treasury;
-
-  address public override bondCalculator;
-
-  address public override principleToken;
-
-  mapping( address => DepositInfo ) public override depositorInfo;
-
-  uint256 public totalDebt;
-
-  function setPrincipleToken( address newPrincipleToken_ ) external override onlyOwner() returns ( bool ) {
-    principleToken = newPrincipleToken_;
-    return true;
-  }
-
-  function setTreasury( address newTreasury_ ) external override onlyOwner() returns ( bool ) {
-    treasury = newTreasury_;
-    return true;
-  }
-  
-  function setBondCalculator( address bondCalculator_ ) external override onlyOwner() returns ( bool ) {
-      bondCalculator = bondCalculator_;
-      return true;
-  }
-
-  function addBondTerm(
-    uint256 bondScalingValue_,
-    uint256 bondingPeriodInBlocks_
-  )
-    external override
-    onlyOwner()
-    returns ( bool )
-  {
-    getCurrentBondTerm = BondTerm(
-      {
-        bondScalingValue: bondScalingValue_,
-        bondingPeriodInBlocks: bondingPeriodInBlocks_
-      }
-    );
-    return true;
-  }
-
-  function getDepositorInfo( address depositorAddress_) external view override returns ( uint principleAmount_, uint interestDue_, uint bondMaturationBlock_) {
-    DepositInfo memory depositorInfo = depositorInfo[depositorAddress_];
-    principleAmount_ = depositorInfo.principleAmount;
-    interestDue_ = depositorInfo.interestDue;
-    bondMaturationBlock_ = depositorInfo.bondMaturationBlock;
-  }
-
-  function _depositBondPrinciple(
-    uint256 amountToDeposit_
-  ) 
-    internal
-  {
-    IERC20( principleToken ).safeTransferFrom(
-      msg.sender,
-      address(this),
-      amountToDeposit_
-    );
-
-    BondTerm memory currentBondTerm_ = getCurrentBondTerm;
-
-    uint interestDue_ = IBondingCalculator( bondCalculator )
-          .calculateBondInterest(
-            principleToken,
-            amountToDeposit_,
-            currentBondTerm_.bondScalingValue
-          ).div( 1e9 );
-    require(totalInterestDue_ >= 100000000, "Bond too small" );
-
-    uint totalDeposit = depositorInfo[msg.sender].principleAmount.add(amountToDeposit_);
-
-    uint totalInterestDue_ = depositorInfo[msg.sender].interestDue.add(interestDue_);
-
-    totalDebt = totalDebt.add(interestDue_);
-
-    depositorInfo[msg.sender] = DepositInfo(
-      {
-        principleAmount: totalDeposit,
-        interestDue: totalInterestDue_,
-        bondMaturationBlock: block.number.add( currentBondTerm_.bondingPeriodInBlocks )
-      }
-    );
+library Babylonian {
+    // credit for this implementation goes to
+    // https://github.com/abdk-consulting/abdk-libraries-solidity/blob/master/ABDKMath64x64.sol#L687
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        if (x == 0) return 0;
+        // this block is equivalent to r = uint256(1) << (BitMath.mostSignificantBit(x) / 2);
+        // however that code costs significantly more gas
+        uint256 xx = x;
+        uint256 r = 1;
+        if (xx >= 0x100000000000000000000000000000000) {
+            xx >>= 128;
+            r <<= 64;
+        }
+        if (xx >= 0x10000000000000000) {
+            xx >>= 64;
+            r <<= 32;
+        }
+        if (xx >= 0x100000000) {
+            xx >>= 32;
+            r <<= 16;
+        }
+        if (xx >= 0x10000) {
+            xx >>= 16;
+            r <<= 8;
+        }
+        if (xx >= 0x100) {
+            xx >>= 8;
+            r <<= 4;
+        }
+        if (xx >= 0x10) {
+            xx >>= 4;
+            r <<= 2;
+        }
+        if (xx >= 0x8) {
+            r <<= 1;
+        }
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1;
+        r = (r + x / r) >> 1; // Seven iterations should be enough
+        uint256 r1 = x / r;
+        return (r < r1 ? r : r1);
+    }
 }
 
-  function depositBondPrinciple(
-    uint256 amountToDeposit_
-  ) 
-    external
-    override
-    returns ( bool )
-  {
-    _depositBondPrinciple( amountToDeposit_ ) ;
-    return true;
+library BitMath {
+    // returns the 0 indexed position of the most significant bit of the input x
+    // s.t. x >= 2**msb and x < 2**(msb+1)
+    function mostSignificantBit(uint256 x) internal pure returns (uint8 r) {
+        require(x > 0, 'BitMath::mostSignificantBit: zero');
+
+        if (x >= 0x100000000000000000000000000000000) {
+            x >>= 128;
+            r += 128;
+        }
+        if (x >= 0x10000000000000000) {
+            x >>= 64;
+            r += 64;
+        }
+        if (x >= 0x100000000) {
+            x >>= 32;
+            r += 32;
+        }
+        if (x >= 0x10000) {
+            x >>= 16;
+            r += 16;
+        }
+        if (x >= 0x100) {
+            x >>= 8;
+            r += 8;
+        }
+        if (x >= 0x10) {
+            x >>= 4;
+            r += 4;
+        }
+        if (x >= 0x4) {
+            x >>= 2;
+            r += 2;
+        }
+        if (x >= 0x2) r += 1;
+    }
+
+    // returns the 0 indexed position of the least significant bit of the input x
+    // s.t. (x & 2**lsb) != 0 and (x & (2**(lsb) - 1)) == 0)
+    // i.e. the bit at the index is set and the mask of all lower bits is 0
+    function leastSignificantBit(uint256 x) internal pure returns (uint8 r) {
+        require(x > 0, 'BitMath::leastSignificantBit: zero');
+
+        r = 255;
+        if (x & uint128(-1) > 0) {
+            r -= 128;
+        } else {
+            x >>= 128;
+        }
+        if (x & uint64(-1) > 0) {
+            r -= 64;
+        } else {
+            x >>= 64;
+        }
+        if (x & uint32(-1) > 0) {
+            r -= 32;
+        } else {
+            x >>= 32;
+        }
+        if (x & uint16(-1) > 0) {
+            r -= 16;
+        } else {
+            x >>= 16;
+        }
+        if (x & uint8(-1) > 0) {
+            r -= 8;
+        } else {
+            x >>= 8;
+        }
+        if (x & 0xf > 0) {
+            r -= 4;
+        } else {
+            x >>= 4;
+        }
+        if (x & 0x3 > 0) {
+            r -= 2;
+        } else {
+            x >>= 2;
+        }
+        if (x & 0x1 > 0) r -= 1;
+    }
+}
+
+library FullMath {
+    function fullMul(uint256 x, uint256 y) private pure returns (uint256 l, uint256 h) {
+        uint256 mm = mulmod(x, y, uint256(-1));
+        l = x * y;
+        h = mm - l;
+        if (mm < l) h -= 1;
+    }
+
+    function fullDiv(
+        uint256 l,
+        uint256 h,
+        uint256 d
+    ) private pure returns (uint256) {
+        uint256 pow2 = d & -d;
+        d /= pow2;
+        l /= pow2;
+        l += h * ((-pow2) / pow2 + 1);
+        uint256 r = 1;
+        r *= 2 - d * r;
+        r *= 2 - d * r;
+        r *= 2 - d * r;
+        r *= 2 - d * r;
+        r *= 2 - d * r;
+        r *= 2 - d * r;
+        r *= 2 - d * r;
+        r *= 2 - d * r;
+        return l * r;
+    }
+
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 d
+    ) internal pure returns (uint256) {
+        (uint256 l, uint256 h) = fullMul(x, y);
+        uint256 mm = mulmod(x, y, d);
+        if (mm > l) h -= 1;
+        l -= mm;
+        require(h < d, 'FullMath::mulDiv: overflow');
+        return fullDiv(l, h, d);
+    }
+}
+
+library FixedPoint {
+    // range: [0, 2**112 - 1]
+    // resolution: 1 / 2**112
+    struct uq112x112 {
+        uint224 _x;
+    }
+
+    // range: [0, 2**144 - 1]
+    // resolution: 1 / 2**112
+    struct uq144x112 {
+        uint256 _x;
+    }
+
+    uint8 private constant RESOLUTION = 112;
+    uint256 private constant Q112 = 0x10000000000000000000000000000;
+    uint256 private constant Q224 = 0x100000000000000000000000000000000000000000000000000000000;
+    uint256 private constant LOWER_MASK = 0xffffffffffffffffffffffffffff; // decimal of UQ*x112 (lower 112 bits)
+
+    // encode a uint112 as a UQ112x112
+    function encode(uint112 x) internal pure returns (uq112x112 memory) {
+        return uq112x112(uint224(x) << RESOLUTION);
+    }
+
+    // encodes a uint144 as a UQ144x112
+    function encode144(uint144 x) internal pure returns (uq144x112 memory) {
+        return uq144x112(uint256(x) << RESOLUTION);
+    }
+
+    // decode a UQ112x112 into a uint112 by truncating after the radix point
+    function decode(uq112x112 memory self) internal pure returns (uint112) {
+        return uint112(self._x >> RESOLUTION);
+    }
+
+    // decode a UQ144x112 into a uint144 by truncating after the radix point
+    function decode144(uq144x112 memory self) internal pure returns (uint144) {
+        return uint144(self._x >> RESOLUTION);
+    }
+
+    // decode a uq112x112 into a uint with 18 decimals of precision
+  function decode112with18(uq112x112 memory self) internal pure returns (uint) {
+    // we only have 256 - 224 = 32 bits to spare, so scaling up by ~60 bits is dangerous
+    // instead, get close to:
+    //  (x * 1e18) >> 112
+    // without risk of overflowing, e.g.:
+    //  (x) / 2 ** (112 - lg(1e18))
+    return uint(self._x) / 5192296858534827;
   }
 
-  function depositBondPrincipleWithPermit(
-    uint256 amountToDeposit_,
-    uint256 deadline, uint8 v, bytes32 r, bytes32 s 
-  ) 
-    external
-    override
-    onlyPrincipleToken( principleToken )
-    returns ( bool )
-  {
-    ERC20Permit( principleToken ).permit( msg.sender, address(this), amountToDeposit_, deadline, v, r, s );
-    _depositBondPrinciple( principleToken, amountToDeposit_ ) ;
-    return true;
-  }
+    // multiply a UQ112x112 by a uint, returning a UQ144x112
+    // reverts on overflow
+    function mul(uq112x112 memory self, uint256 y) internal pure returns (uq144x112 memory) {
+        uint256 z = 0;
+        require(y == 0 || (z = self._x * y) / y == self._x, 'FixedPoint::mul: overflow');
+        return uq144x112(z);
+    }
 
-  function withdrawPrincipleAndForfeitInterest() external override returns ( bool ) {
-    uint256 amountToWithdraw_ = depositorInfo[msg.sender].principleAmount;
-    require( amountToWithdraw_ > 0, "user has no principle to withdraw" );
+    // multiply a UQ112x112 by an int and decode, returning an int
+    // reverts on overflow
+    function muli(uq112x112 memory self, int256 y) internal pure returns (int256) {
+        uint256 z = FullMath.mulDiv(self._x, uint256(y < 0 ? -y : y), Q112);
+        require(z < 2**255, 'FixedPoint::muli: overflow');
+        return y < 0 ? -int256(z) : int256(z);
+    }
 
-    uint256 interestToDelete = depositorInfo[msg.sender].interestDue;
+    // multiply a UQ112x112 by a UQ112x112, returning a UQ112x112
+    // lossy
+    function muluq(uq112x112 memory self, uq112x112 memory other) internal pure returns (uq112x112 memory) {
+        if (self._x == 0 || other._x == 0) {
+            return uq112x112(0);
+        }
+        uint112 upper_self = uint112(self._x >> RESOLUTION); // * 2^0
+        uint112 lower_self = uint112(self._x & LOWER_MASK); // * 2^-112
+        uint112 upper_other = uint112(other._x >> RESOLUTION); // * 2^0
+        uint112 lower_other = uint112(other._x & LOWER_MASK); // * 2^-112
 
-    delete depositorInfo[msg.sender];
+        // partial products
+        uint224 upper = uint224(upper_self) * upper_other; // * 2^0
+        uint224 lower = uint224(lower_self) * lower_other; // * 2^-224
+        uint224 uppers_lowero = uint224(upper_self) * lower_other; // * 2^-112
+        uint224 uppero_lowers = uint224(upper_other) * lower_self; // * 2^-112
 
-    totalDebt = totalDebt.sub( interestToDelete );
+        // so the bit shift does not overflow
+        require(upper <= uint112(-1), 'FixedPoint::muluq: upper overflow');
 
-    IERC20( principleToken ).safeTransfer( msg.sender, amountToWithdraw_ );
+        // this cannot exceed 256 bits, all values are 224 bits
+        uint256 sum = uint256(upper << RESOLUTION) + uppers_lowero + uppero_lowers + (lower >> RESOLUTION);
 
-    return true;
-  }
+        // so the cast does not overflow
+        require(sum <= uint224(-1), 'FixedPoint::muluq: sum overflow');
 
-  function redeemBond() external override returns ( bool ) {
-    DepositInfo storage depositInfoToRedeem_ = depositorInfo[msg.sender];
+        return uq112x112(uint224(sum));
+    }
 
-    delete depositorInfo[msg.sender];
+    // divide a UQ112x112 by a UQ112x112, returning a UQ112x112
+    function divuq(uq112x112 memory self, uq112x112 memory other) internal pure returns (uq112x112 memory) {
+        require(other._x > 0, 'FixedPoint::divuq: division by zero');
+        if (self._x == other._x) {
+            return uq112x112(uint224(Q112));
+        }
+        if (self._x <= uint144(-1)) {
+            uint256 value = (uint256(self._x) << RESOLUTION) / other._x;
+            require(value <= uint224(-1), 'FixedPoint::divuq: overflow');
+            return uq112x112(uint224(value));
+        }
 
-    uint256 pendingInterestDue_ = depositInfoToRedeem_.interestDue;
-    uint256 pendingBondMaturationBlock_ = depositInfoToRedeem_.bondMaturationBlock;
-    uint256 pendingPrincipleAmount_ = depositInfoToRedeem_.principleAmount;
+        uint256 result = FullMath.mulDiv(Q112, self._x, other._x);
+        require(result <= uint224(-1), 'FixedPoint::divuq: overflow');
+        return uq112x112(uint224(result));
+    }
 
-    require( pendingInterestDue_ > 0, "Sender is not due any interest." );
-    require( block.number >= pendingBondMaturationBlock_, "Bond has not matured." );
+  // returns a uq112x112 which represents the ratio of the numerator to the denominator
+  // equivalent to encode(numerator).div(denominator)
+  // function fraction(uint112 numerator, uint112 denominator) internal pure returns (uq112x112 memory) {
+  //   require(denominator > 0, "DIV_BY_ZERO");
+  //   return uq112x112((uint224(numerator) << 112) / denominator);
+  // }
 
-    IUniswapV2ERC20( principleToken ).approve( address( treasury ), pendingPrincipleAmount_ );
+    // returns a UQ112x112 which represents the ratio of the numerator to the denominator
+    // lossy if either numerator or denominator is greater than 112 bits
+    function fraction(uint256 numerator, uint256 denominator) internal pure returns (uq112x112 memory) {
+        require(denominator > 0, 'FixedPoint::fraction: division by zero');
+        if (numerator == 0) return FixedPoint.uq112x112(0);
 
-    ITreasury( treasury ).depositPrinciple( pendingPrincipleAmount_ );
+        if (numerator <= uint144(-1)) {
+            uint256 result = (numerator << RESOLUTION) / denominator;
+            require(result <= uint224(-1), 'FixedPoint::fraction: overflow');
+            return uq112x112(uint224(result));
+        } else {
+            uint256 result = FullMath.mulDiv(numerator, Q112, denominator);
+            require(result <= uint224(-1), 'FixedPoint::fraction: overflow');
+            return uq112x112(uint224(result));
+        }
+    }
+
+    // take the reciprocal of a UQ112x112
+    // reverts on overflow
+    // lossy
+    function reciprocal(uq112x112 memory self) internal pure returns (uq112x112 memory) {
+        require(self._x != 0, 'FixedPoint::reciprocal: reciprocal of zero');
+        require(self._x != 1, 'FixedPoint::reciprocal: overflow');
+        return uq112x112(uint224(Q224 / self._x));
+    }
+
+    // square root of a UQ112x112
+    // lossy between 0/1 and 40 bits
+    function sqrt(uq112x112 memory self) internal pure returns (uq112x112 memory) {
+        if (self._x <= uint144(-1)) {
+            return uq112x112(uint224(Babylonian.sqrt(uint256(self._x) << 112)));
+        }
+
+        uint8 safeShiftBits = 255 - BitMath.mostSignificantBit(self._x);
+        safeShiftBits -= safeShiftBits % 2;
+        return uq112x112(uint224(Babylonian.sqrt(uint256(self._x) << safeShiftBits) << ((112 - safeShiftBits) / 2)));
+    }
+}
 
 
-    return true;
-  }
+interface IPrincipleDepository {
+
+    function getDepositorInfo( address _depositorAddress_ ) external view returns ( uint principleAmount_, uint interestDue_, uint maturationBlock_ );
+    
+    function depositBondPrinciple( uint256 amountToDeposit_ ) external returns ( bool );
+
+    function depositBondPrincipleWithPermit( uint256 amountToDeposit_, uint256 deadline, uint8 v, bytes32 r, bytes32 s ) external returns ( bool );
+
+    function redeemBond() external returns ( bool );
+
+    function withdrawPrincipleAndForfeitInterest() external returns ( bool );
+      
+    function calculateBondInterest( uint principleValue_ ) external view returns ( uint interestDue_ );
+        
+}
+
+interface IBondingCalculator {
+    function principleValuation( address principleTokenAddress_, uint amountDeposited_ ) external view returns ( uint principleValuation_ );
+}
+
+interface ITreasury {
+    function depositPrinciple( uint depositAmount_ ) external returns ( bool );
+}
+
+contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
+
+    using FixedPoint for *;
+    using SafeERC20 for IERC20;
+    using SafeMath for uint;
+
+    struct DepositInfo {
+        uint principleAmount;
+        uint interestDue;
+        uint maturationBlock;
+    }
+    
+    mapping( address => DepositInfo ) public depositorInfo;
+
+    uint public bondControlVariable;
+    uint public bondingPeriodInBlocks; 
+    uint public minPremium;
+
+    address public treasury;
+    address public bondCalculator;
+    address public principleToken;
+    address public OHM;
+
+    uint256 public totalDebt;
+    
+    address public stakingContract;
+    address public DAOWallet;
+    uint public DAOShare;
+    
+    constructor( address principleToken_, address OHM_ ) {
+        principleToken = principleToken_;
+        OHM = OHM_;
+    }
+    
+    function setAddresses( address bondCalculator_, address treasury_, address stakingContract_, 
+    address DAOWallet_, uint DAOShare_ ) external onlyOwner() returns ( bool ) {
+        bondCalculator = bondCalculator_;
+        treasury = treasury_;
+        stakingContract = stakingContract_;
+        DAOWallet = DAOWallet_;
+        DAOShare = DAOShare_;
+        return true;
+    }
+
+    function setBondTerms( uint bondControlVariable_, uint bondingPeriodInBlocks_, uint minPremium_ ) 
+    external onlyOwner() returns ( bool ) {
+        bondControlVariable = bondControlVariable_;
+        bondingPeriodInBlocks = bondingPeriodInBlocks_;
+        minPremium = minPremium_;
+        return true;
+    }
+
+    function getDepositorInfo( address depositorAddress_ ) 
+    external view override returns ( uint _principleAmount, uint _interestDue, uint _maturationBlock ) {
+        DepositInfo memory depositorInfo_ = depositorInfo[ depositorAddress_ ];
+        _principleAmount = depositorInfo_.principleAmount;
+        _interestDue = depositorInfo_.interestDue;
+        _maturationBlock = depositorInfo_.maturationBlock;
+    }
+
+    function depositBondPrinciple( uint amountToDeposit_ ) external override returns ( bool ) {
+        _depositBondPrinciple( amountToDeposit_ ) ;
+        return true;
+    }
+
+    function depositBondPrincipleWithPermit( uint amountToDeposit_, uint deadline, uint8 v, bytes32 r, bytes32 s ) 
+    external override returns ( bool ) {
+        ERC20Permit( principleToken ).permit( msg.sender, address(this), amountToDeposit_, deadline, v, r, s );
+        _depositBondPrinciple( amountToDeposit_ ) ;
+        return true;
+    }
+
+    function _depositBondPrinciple( uint amountToDeposit_ ) internal returns ( bool ){
+        IERC20( principleToken ).safeTransferFrom( msg.sender, address(this), amountToDeposit_ );
+
+        uint principleValue_ = IBondingCalculator( bondCalculator )
+            .principleValuation( principleToken, amountToDeposit_ ).div( 1e9 );
+
+        uint interestDue_ = _calculateBondInterest( principleValue_ );
+
+        require( interestDue_ >= 10000000, "Bond too small" );
+
+        totalDebt = totalDebt.add( interestDue_ );
+
+        depositorInfo[msg.sender] = DepositInfo({
+            principleAmount: depositorInfo[msg.sender].principleAmount.add( amountToDeposit_ ),
+            interestDue: depositorInfo[msg.sender].interestDue.add( interestDue_ ),
+            maturationBlock: block.number.add( bondingPeriodInBlocks )
+        });
+        return true;
+    }
+
+    function redeemBond() external override returns ( bool ) {
+        require( depositorInfo[msg.sender].interestDue > 0, "Sender is not due any interest." );
+        require( block.number >= depositorInfo[msg.sender].maturationBlock, "Bond has not matured." );
+
+        uint principleAmount_ = depositorInfo[msg.sender].principleAmount;
+        uint interestDue_ = depositorInfo[msg.sender].interestDue;
+
+        delete depositorInfo[msg.sender];
+
+        uint principleValue = IBondingCalculator( bondCalculator )
+            .principleValuation( principleToken, principleAmount_ ).div( 1e9 );
+
+        uint profit_ = principleValue.sub( interestDue_ );
+        uint DAOProfit_ = FixedPoint.fraction( profit_, DAOShare ).decode();
+
+        IUniswapV2ERC20( principleToken ).approve( address( treasury ), principleAmount_ );
+
+        ITreasury( treasury ).depositPrinciple( principleAmount_ );
+
+        IERC20( OHM ).safeTransfer( msg.sender, interestDue_ );
+        IERC20( OHM ).safeTransfer( stakingContract, profit_.sub( DAOProfit_ ) );
+        IERC20( OHM ).safeTransfer( DAOWallet, DAOProfit_ );
+
+        totalDebt = totalDebt.sub( interestDue_ );
+        return true;
+    }
+
+    function withdrawPrincipleAndForfeitInterest() external override returns ( bool ) {
+        uint amountToWithdraw_ = depositorInfo[msg.sender].principleAmount;
+        require( amountToWithdraw_ > 0, "user has no principle to withdraw" );
+
+        uint interestToDelete_ = depositorInfo[msg.sender].interestDue;
+
+        delete depositorInfo[msg.sender];
+
+        totalDebt = totalDebt.sub( interestToDelete_ );
+
+        IERC20( principleToken ).safeTransfer( msg.sender, amountToWithdraw_ );
+
+        return true;
+    }
+
+    function calculateBondInterest( uint amountToDeposit_ ) external view override returns ( uint _interestDue ) {
+        uint principleValue_ = IBondingCalculator( bondCalculator ).principleValuation( principleToken, amountToDeposit_ ).div( 1e9 );
+        _interestDue = _calculateBondInterest( principleValue_ );
+    }
+
+    function _calculateBondInterest( uint principleValue_ ) internal view returns ( uint _interestDue ) {
+        _interestDue = FixedPoint.fraction( principleValue_, _calcPremium() ).decode112with18().div( 1e16 );
+    }
+
+    function _calcPremium() internal view returns ( uint _premium ) {
+        _premium = bondControlVariable.mul( _calcDebtRatio() ).add( uint(1000000000) ).div( 1e7 );
+        if ( _premium < minPremium ) {
+            _premium = minPremium;
+        }
+    }
+
+    function _calcDebtRatio() internal view returns ( uint _debtRatio ) {    
+        _debtRatio = FixedPoint.fraction( 
+            // Must move the decimal to the right by 9 places to avoid math underflow error
+            totalDebt.mul( 1e9 ), 
+            IERC20( OHM ).totalSupply()
+        ).decode112with18().div(1e18);
+        // Must move the decimal tot he left 18 places to account for the 9 places added above and the 19 signnificant digits added by FixedPoint.
+    }
 }
