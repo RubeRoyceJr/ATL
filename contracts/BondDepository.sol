@@ -878,6 +878,7 @@ library FixedPoint {
     }
 }
 
+///////////////////////////////////////// End of flatten \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 interface IPrincipleDepository {
 
@@ -904,34 +905,34 @@ interface ITreasury {
     function depositPrinciple( uint depositAmount_ ) external returns ( bool );
 }
 
-contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
+contract OlympusPrincipleDepository is IPrincipleDepository, Ownable {
 
     using FixedPoint for *;
     using SafeERC20 for IERC20;
     using SafeMath for uint;
 
     struct DepositInfo {
-        uint principleAmount;
-        uint interestDue;
-        uint maturationBlock;
+        uint principleAmount; // Amount of LP deposited
+        uint interestDue; // OHM due for bond
+        uint maturationBlock; // Block at which bond matures
     }
 
     mapping( address => DepositInfo ) public depositorInfo;
 
-    uint public bondControlVariable;
-    uint public bondingPeriodInBlocks; 
-    uint public minPremium;
+    uint public bondControlVariable; // Scaling variable for bond premium
+    uint public bondingPeriodInBlocks; // Length for bonds to vest
+    uint public minPremium; // Minimum premium on bonds
 
-    address public treasury;
+    address public treasury; // Vault contract
     address public bondCalculator;
-    address public principleToken;
-    address public OHM;
+    address public principleToken; // LP share
+    address public OHM; // Native token
 
-    uint256 public totalDebt;
+    uint256 public totalDebt; // Total amount of OHM to be created by bonds
 
     address public stakingContract;
     address public DAOWallet;
-    uint public DAOShare;
+    uint public DAOShare; // DAO share of profits ( % = (1 / DAOshare) )
 
     constructor( address principleToken_, address OHM_ ) {
         principleToken = principleToken_;
@@ -956,6 +957,10 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         return true;
     }
 
+    // Gets info about depositorAddress's bond deposit
+    // uint _principleAmount = LP deposited
+    // uint _interestDue = OHM due at vesting
+    // uint _maturationBlock = block after which bond matures
     function getDepositorInfo( address depositorAddress_ ) 
     external view override returns ( uint _principleAmount, uint _interestDue, uint _maturationBlock ) {
         DepositInfo memory depositorInfo_ = depositorInfo[ depositorAddress_ ];
@@ -964,6 +969,7 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         _maturationBlock = depositorInfo_.maturationBlock;
     }
 
+    // Creates a bond with amountToDeposit LP
     function depositBondPrinciple( uint amountToDeposit_ ) external override returns ( bool ) {
         _depositBondPrinciple( amountToDeposit_ ) ;
         return true;
@@ -976,6 +982,10 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         return true;
     }
 
+    // Values the LP with bonding calculator
+    // Calculates OHM due for that LP
+    // Adds value of LP to totalDebt
+    // Stores bond info
     function _depositBondPrinciple( uint amountToDeposit_ ) internal returns ( bool ){
         IERC20( principleToken ).safeTransferFrom( msg.sender, address(this), amountToDeposit_ );
 
@@ -996,6 +1006,10 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         return true;
     }
 
+    // Allows user to redeem their bond after it has vested
+    // Calculates profit due to stakers and the DAO
+    // Sends OHM to bonder, stakers, and DAO
+    // Removes bond from total debt
     function redeemBond() external override returns ( bool ) {
         require( depositorInfo[msg.sender].interestDue > 0, "Sender is not due any interest." );
         require( block.number >= depositorInfo[msg.sender].maturationBlock, "Bond has not matured." );
@@ -1005,7 +1019,7 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
 
         delete depositorInfo[msg.sender];
 
-        uint principleValue = IBondingCalculator( bondCalculator )
+        uint principleValue_ = IBondingCalculator( bondCalculator )
             .principleValuation( principleToken, principleAmount_ ).div( 1e9 );
 
         uint profit_ = principleValue.sub( interestDue_ );
@@ -1019,46 +1033,48 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         IERC20( OHM ).safeTransfer( stakingContract, profit_.sub( DAOProfit_ ) );
         IERC20( OHM ).safeTransfer( DAOWallet, DAOProfit_ );
 
-        totalDebt = totalDebt.sub( principleValue );
+        totalDebt = totalDebt.sub( principleValue_ );
         return true;
     }
 
+    // Allows user to reclaim their principle by deleting their bond
+    // Removes bond from total debt
     function withdrawPrincipleAndForfeitInterest() external override returns ( bool ) {
         uint amountToWithdraw_ = depositorInfo[msg.sender].principleAmount;
-        uint principleValue = IBondingCalculator( bondCalculator )
+
+        uint principleValue_ = IBondingCalculator( bondCalculator )
             .principleValuation( principleToken, principleAmount_ ).div( 1e9 );
 
         require( amountToWithdraw_ > 0, "user has no principle to withdraw" );
 
-        uint interestToDelete_ = depositorInfo[msg.sender].interestDue;
-
         delete depositorInfo[msg.sender];
 
-        totalDebt = totalDebt.sub( principleValue );
+        totalDebt = totalDebt.sub( principleValue_ );
 
         IERC20( principleToken ).safeTransfer( msg.sender, amountToWithdraw_ );
 
         return true;
     }
 
-    function transferOwnership( address newOwner ) external returns ( bool ) {
-        owner = newOwner;
-        return true;
-    }
-
+    // Values amountToDeposit LP and calculates interest due (in OHM) for it 
     function calculateBondInterest( uint amountToDeposit_ ) external view override returns ( uint _interestDue ) {
         uint principleValue_ = IBondingCalculator( bondCalculator ).principleValuation( principleToken, amountToDeposit_ ).div( 1e9 );
         _interestDue = _calculateBondInterest( principleValue_ );
     }
 
+    // calculates interest due for a given principleValue (a constant DAI value)
+    // interestDue = (principleValue / premium)
     function _calculateBondInterest( uint principleValue_ ) internal view returns ( uint _interestDue ) {
         _interestDue = FixedPoint.fraction( principleValue_, _calcPremium() ).decode112with18().div( 1e16 );
     }
 
+    // View function for calculating the premium
     function calculatePremium() external view override returns ( uint _premium ) {
         _premium = _calcPremium();
     }
 
+    // Calculates the premium for bonds
+    // premium = 1 + (debt ratio * bondControlVariable)
     function _calcPremium() internal view returns ( uint _premium ) {
         _premium = bondControlVariable.mul( _calcDebtRatio() ).add( uint(1000000000) ).div( 1e7 );
         if ( _premium < minPremium ) {
@@ -1066,6 +1082,8 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         }
     }
 
+    // Calculates the debt ratio of the system
+    // debt ratio = total debt outstanding / OHM supply
     function _calcDebtRatio() internal view returns ( uint _debtRatio ) {    
         _debtRatio = FixedPoint.fraction( 
             // Must move the decimal to the right by 9 places to avoid math underflow error

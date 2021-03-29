@@ -648,6 +648,9 @@ library SafeERC20 {
         }
     }
 }
+
+///////////////////////////////////////// End of flatten \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 interface ITreasury {
 
   function getBondingCalculator() external returns ( address );
@@ -687,7 +690,7 @@ contract OlympusStaking is Ownable {
 
   address public ohm;
   address public sOHM;
-  uint256 public ohmToDistributeNextEpoch;
+  uint256 public ohmToDistributeNextEpoch; // used for rebase
 
   uint256 nextEpochBlock;
 
@@ -709,33 +712,36 @@ contract OlympusStaking is Ownable {
         isInitialized = true;
     }
 
-  function setEpochLengthintBlock( uint256 newEpochLengthInBlocks_ ) external onlyOwner() {
-    epochLengthInBlocks = newEpochLengthInBlocks_;
-  }
-
-  function _distributeOHMProfits() internal {
-    if( nextEpochBlock <= block.number ) {
-      IOHMandsOHM(sOHM).rebase(ohmToDistributeNextEpoch);
-      uint256 _ohmBalance = IOHMandsOHM(ohm).balanceOf(address(this));
-      uint256 _sohmSupply = IOHMandsOHM(sOHM).circulatingSupply();
-      ohmToDistributeNextEpoch = _ohmBalance.sub(_sohmSupply);
-      nextEpochBlock = nextEpochBlock.add( epochLengthInBlocks );
+    // typo in function name
+    function setEpochLengthintBlock( uint256 newEpochLengthInBlocks_ ) external onlyOwner() {
+        epochLengthInBlocks = newEpochLengthInBlocks_; 
     }
-  }
 
-  function _stakeOHM( uint256 amountToStake_ ) internal {
-    _distributeOHMProfits();
+    // triggers rebase to distribute accumulated profits to circulating sOHM
+    function _distributeOHMProfits() internal {
+        if( nextEpochBlock <= block.number ) {
+            IOHMandsOHM(sOHM).rebase(ohmToDistributeNextEpoch);
+            uint256 _ohmBalance = IOHMandsOHM(ohm).balanceOf(address(this));
+            uint256 _sohmSupply = IOHMandsOHM(sOHM).circulatingSupply();
+            ohmToDistributeNextEpoch = _ohmBalance.sub(_sohmSupply);
+            nextEpochBlock = nextEpochBlock.add( epochLengthInBlocks );
+        }
+    }
+
+    // checks for rebase and exchanges OHM 1:1 for sOHM
+    function _stakeOHM( uint256 amountToStake_ ) internal {
+        _distributeOHMProfits();
         
-    IERC20(ohm).safeTransferFrom(
-        msg.sender,
-        address(this),
-        amountToStake_
-      );
+        IERC20(ohm).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amountToStake_
+        );
 
-    IERC20(sOHM).safeTransfer(msg.sender, amountToStake_);
-  }
+        IERC20(sOHM).safeTransfer(msg.sender, amountToStake_);
+    }
 
-  function stakeOHMWithPermit (
+    function stakeOHMWithPermit (
         uint256 amountToStake_,
         uint256 deadline_,
         uint8 v_,
@@ -756,6 +762,7 @@ contract OlympusStaking is Ownable {
         _stakeOHM( amountToStake_ );
     }
 
+    // user stakes an amount of OHM to get sOHM
     function stakeOHM( uint amountToStake_ ) external returns ( bool ) {
 
       _stakeOHM( amountToStake_ );
@@ -764,6 +771,7 @@ contract OlympusStaking is Ownable {
 
     }
 
+    // checks for rebase and exchanges sOHM 1:1 for OHM
     function _unstakeOHM( uint256 amountToUnstake_ ) internal {
 
       _distributeOHMProfits();
@@ -799,6 +807,7 @@ contract OlympusStaking is Ownable {
 
     }
 
+    // user unstakes an amount of sOHM to get OHM
     function unstakeOHM( uint amountToWithdraw_ ) external returns ( bool ) {
 
         _unstakeOHM( amountToWithdraw_ );

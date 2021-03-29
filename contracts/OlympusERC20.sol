@@ -1213,6 +1213,8 @@ contract Ownable is IOwnable {
   }
 }
 
+///////////////////////////////////////// End of flatten \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 contract VaultOwned is Ownable {
     
   address internal _vault;
@@ -1320,36 +1322,9 @@ contract OlympusERC20Token is Divine {
         _mint(account_, amount_);
     }
 
-    /**
-     * @dev Destroys `amount` tokens from the caller.
-     *
-     * See {ERC20-_burn}.
-     */
     function burn(uint256 amount) public virtual {
         _burn(msg.sender, amount);
     }
-
-    // function _beforeTokenTransfer( address from_, address to_, uint256 amount_ ) internal override virtual {
-    //   if( _dexPoolsTWAPSources.contains( from_ ) ) {
-    //     _uodateTWAPOracle( from_, twapEpochPeriod );
-    //   } else {
-    //     if ( _dexPoolsTWAPSources.contains( to_ ) ) {
-    //       _uodateTWAPOracle( to_, twapEpochPeriod );
-    //     }
-    //   }
-    // }
-
-    /*
-     * @dev Destroys `amount` tokens from `account`, deducting from the caller's
-     * allowance.
-     *
-     * See {ERC20-_burn} and {ERC20-allowance}.
-     *
-     * Requirements:
-     *
-     * - the caller must have allowance for ``accounts``'s tokens of at least
-     * `amount`.
-     */
      
     function burnFrom(address account_, uint256 amount_) public virtual {
         _burnFrom(account_, amount_);

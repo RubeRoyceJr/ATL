@@ -999,6 +999,8 @@ abstract contract ERC20Permit is ERC20, IERC2612Permit {
     }
 }
 
+///////////////////////////////////////// End of flatten \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
 contract sOlympus is ERC20Permit, Ownable {
 
     using SafeMath for uint256;
@@ -1056,6 +1058,8 @@ contract sOlympus is ERC20Permit, Ownable {
         emit LogMonetaryPolicyUpdated(monetaryPolicy_);
     }
 
+    // uint256 olyProfit = amount to rebase by (oly is deprecated name for OHM)
+    // returns new rebased total supply
     function rebase(uint256 olyProfit) public onlyMonetaryPolicy() returns (uint256) {
         uint256 _rebase;
 
@@ -1089,10 +1093,12 @@ contract sOlympus is ERC20Permit, Ownable {
         return _gonBalances[who].div(_gonsPerFragment);
     }
 
+    // supply of sOHM not held by staking contract
     function circulatingSupply() public view returns (uint) {
        return _totalSupply.sub(balanceOf(stakingContract));
     }
 
+    // transfers only allowed to staking contract
     function transfer(address to, uint256 value) public override validRecipient(to) returns (bool) {
         require(msg.sender == stakingContract, 'transfer not from staking contract');
 
@@ -1107,6 +1113,7 @@ contract sOlympus is ERC20Permit, Ownable {
         return _allowedFragments[owner_][spender];
     }
 
+    // transfers only allowed to staking contract
     function transferFrom(address from, address to, uint256 value) public override validRecipient(to) returns (bool) {
         require(stakingContract == to, 'transfer from not to staking contract');
 

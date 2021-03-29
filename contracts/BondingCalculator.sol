@@ -597,27 +597,15 @@ library SafeMath {
   }
 }
 
-interface ITreasury {
+///////////////////////////////////////// End of flatten \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-  function getBondingCalculator() external returns ( address );
-  function payDebt( address depositor_ ) external returns ( bool );
-  function getTimelockEndBlock() external returns ( uint );
+interface ITreasury {
   function getManagedToken() external returns ( address );
-  function getDebtAmountDue() external returns ( uint );
-  function incurDebt( uint principieTokenAmountDeposited_, uint bondScalingValue_ ) external returns ( bool );
 }
 
 interface IBondingCalculator {
-
-  function calcDebtRatio( uint pendingDebtDue_, uint managedTokenTotalSupply_ ) external pure returns ( uint debtRatio_ );
-
-  function calcBondPremium( uint debtRatio_, uint bondScalingFactor ) external pure returns ( uint premium_ );
-
   function calcPrincipleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) external pure returns ( uint principleValuation_ );
-
   function principleValuation( address principleTokenAddress_, uint amountDeposited_ ) external view returns ( uint principleValuation_ );
-
-  function calculateBondInterest( address treasury_, address principleTokenAddress_, uint amountDeposited_, uint bondScalingFactor ) external returns ( uint interestDue_ );
 }
 
 contract OlympusBondingCalculator is IBondingCalculator {
@@ -630,79 +618,38 @@ contract OlympusBondingCalculator is IBondingCalculator {
   event PrincipleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_, uint principleValuation_  );
   event BondInterest( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_, uint pendingDebtDue_, uint managedTokenTotalSupply_, uint bondScalingValue_, uint interestDue_ );
 
-  function _calcDebtRatio( uint pendingDebtDue_, uint managedTokenTotalSupply_ ) internal pure returns ( uint debtRatio_ ) {    
-    debtRatio_ = FixedPoint.fraction( 
-      // Must move the decimal to the right by 9 places to avoid math underflow error
-      pendingDebtDue_.mul( 1e9 ), 
-      managedTokenTotalSupply_
-    ).decode112with18()
-    // Must move the decimal tot he left 18 places to account for the 9 places added above and the 19 signnificant digits added by FixedPoint.
-    .div(1e18);
+    // Values LP share based on formula
+    // returns principleValuation = 2sqrt(constant product) * (% ownership of total LP)
+    // uint k_ = constant product of liquidity pool
+    // uint amountDeposited_ = amount of LP token
+    // uint totalSupplyOfTokenDeposited = total amount of LP
+    function _principleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) internal pure returns ( uint principleValuation_ ) {
+        // *** When deposit amount is small does not pick up principle valuation *** \\
+        principleValuation_ = k_.sqrrt().mul(2).mul( FixedPoint.fraction( amountDeposited_, totalSupplyOfTokenDeposited_ ).decode112with18().div( 1e10 ).mul( 10 ) );
+    }
 
-  }
+    // External function to get value of an amount of LP
+    // uint k_ = constant product of liquidity pool
+    // uint amountDeposited_ = amount of LP token
+    // uint totalSupplyOfTokenDeposited = total amount of LP
+    function calcPrincipleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) external pure override returns ( uint principleValuation_ ) {
+        principleValuation_ = _principleValuation( k_, amountDeposited_, totalSupplyOfTokenDeposited_ );
+    }
 
-  function calcDebtRatio( uint pendingDebtDue_, uint managedTokenTotalSupply_ ) external pure override returns ( uint debtRatio_ ) {
-    debtRatio_ = _calcDebtRatio( pendingDebtDue_, managedTokenTotalSupply_ );
-  }
+    // View function for principle value
+    // address principleTokenAddress = LP token address
+    // uint amountDeposited_ = amount of LP to value
+    function principleValuation( address principleTokenAddress_, uint amountDeposited_ ) external view override returns ( uint principleValuation_ ) {
+        uint k_ = _getKValue(principleTokenAddress_);
 
-  // Premium is 2 extra deciamls i.e. 250 = 2.5 premium
-  function _calcBondPremium( uint debtRatio_, uint bondScalingValue_ ) internal pure returns ( uint premium_ ) {
-    // premium_ = uint( uint(1).mul( 1e9 ).add( debtRatio_ ) ** bondScalingValue_);
-    premium_ = bondScalingValue_.mul( (debtRatio_) ).add( uint(1010000000) ).div( 1e7 );
-  }
+        uint principleTokenTotalSupply_ = IUniswapV2Pair( principleTokenAddress_ ).totalSupply();
+        principleValuation_ = _principleValuation( k_, amountDeposited_, principleTokenTotalSupply_ );
+    }
 
-  function calcBondPremium( uint debtRatio_, uint bondScalingValue_ ) external pure override returns ( uint premium_ ) {
-    premium_ = _calcBondPremium( debtRatio_, bondScalingValue_ );
-  }
-
-  function _principleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) internal pure returns ( uint principleValuation_ ) {
-    // *** When deposit amount is small does not pick up principle valuation *** \\
-    principleValuation_ = k_.sqrrt().mul(2).mul( FixedPoint.fraction( amountDeposited_, totalSupplyOfTokenDeposited_ ).decode112with18().div( 1e10 ).mul( 10 ) );
-  }
-
-  function calcPrincipleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) external pure override returns ( uint principleValuation_ ) {
-    principleValuation_ = _principleValuation( k_, amountDeposited_, totalSupplyOfTokenDeposited_ );
-  }
-
-  function principleValuation( address principleTokenAddress_, uint amountDeposited_ ) external view override returns ( uint principleValuation_ ) {
-    uint k_ = _getKValue(principleTokenAddress_);
-
-    uint principleTokenTotalSupply_ = IUniswapV2Pair( principleTokenAddress_ ).totalSupply();
-    principleValuation_ = _principleValuation( k_, amountDeposited_, principleTokenTotalSupply_ );
-  }
-
-  function _calculateBondInterest( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_, uint pendingDebtDue_, uint managedTokenTotalSupply_, uint bondScalingValue_ ) internal returns ( uint interestDue_ ) {
-    uint principleValuation_ = _principleValuation( k_, amountDeposited_, totalSupplyOfTokenDeposited_ );
-
-    uint debtRatio_ = _calcDebtRatio( pendingDebtDue_, managedTokenTotalSupply_ );
-
-    uint premium_ = _calcBondPremium( debtRatio_, bondScalingValue_ );
-
-    interestDue_ = FixedPoint.fraction(
-      principleValuation_,
-     premium_
-    ).decode().div( 100 );
-    emit BondInterest( k_, amountDeposited_, totalSupplyOfTokenDeposited_, pendingDebtDue_, managedTokenTotalSupply_, bondScalingValue_, interestDue_ );
-  }
-
-  function calculateBondInterest( address treasury_, address principleTokenAddress_, uint amountDeposited_, uint bondScalingValue_ ) external override returns ( uint interestDue_ ) {
-    //uint k_ = IUniswapV2Pair( principleTokenAddress_ ).kLast();
-
-    uint k_ = _getKValue(principleTokenAddress_);
-
-    uint principleTokenTotalSuply_ = IUniswapV2Pair( principleTokenAddress_ ).totalSupply();
-
-    address managedToken_ = ITreasury( treasury_ ).getManagedToken();
-
-    uint managedTokenTotalSuply_ = IUniswapV2Pair( managedToken_ ).totalSupply();
-
-    uint outstandingDebtAmount_ = ITreasury( treasury_ ).getDebtAmountDue();
-
-    interestDue_ = _calculateBondInterest( k_, amountDeposited_, principleTokenTotalSuply_, outstandingDebtAmount_, managedTokenTotalSuply_, bondScalingValue_ );
-  }
-  
-  function _getKValue( address principleTokenAddress_ ) internal view returns( uint k_ )  {
-    (uint reserve0, uint reserve1, ) = IUniswapV2Pair( principleTokenAddress_ ).getReserves();
-     k_ = reserve0.mul(reserve1).div(1e9);
-  }
+    // Gets constant product of pool
+    // k = x * y
+    function _getKValue( address principleTokenAddress_ ) internal view returns( uint k_ )  {
+        (uint reserve0, uint reserve1, ) = IUniswapV2Pair( principleTokenAddress_ ).getReserves();
+        k_ = reserve0.mul(reserve1).div(1e9); // Accounts for decimals (DAI = 18; OHM = 9)
+    }
 }
