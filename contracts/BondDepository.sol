@@ -893,6 +893,7 @@ interface IPrincipleDepository {
       
     function calculateBondInterest( uint principleValue_ ) external view returns ( uint interestDue_ );
         
+    function calculatePremium() external view returns ( uint _premium );
 }
 
 interface IBondingCalculator {
@@ -914,7 +915,7 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         uint interestDue;
         uint maturationBlock;
     }
-    
+
     mapping( address => DepositInfo ) public depositorInfo;
 
     uint public bondControlVariable;
@@ -927,16 +928,16 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
     address public OHM;
 
     uint256 public totalDebt;
-    
+
     address public stakingContract;
     address public DAOWallet;
     uint public DAOShare;
-    
+
     constructor( address principleToken_, address OHM_ ) {
         principleToken = principleToken_;
         OHM = OHM_;
     }
-    
+
     function setAddresses( address bondCalculator_, address treasury_, address stakingContract_, 
     address DAOWallet_, uint DAOShare_ ) external onlyOwner() returns ( bool ) {
         bondCalculator = bondCalculator_;
@@ -985,7 +986,7 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
 
         require( interestDue_ >= 10000000, "Bond too small" );
 
-        totalDebt = totalDebt.add( interestDue_ );
+        totalDebt = totalDebt.add( principleValue );
 
         depositorInfo[msg.sender] = DepositInfo({
             principleAmount: depositorInfo[msg.sender].principleAmount.add( amountToDeposit_ ),
@@ -1018,22 +1019,30 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
         IERC20( OHM ).safeTransfer( stakingContract, profit_.sub( DAOProfit_ ) );
         IERC20( OHM ).safeTransfer( DAOWallet, DAOProfit_ );
 
-        totalDebt = totalDebt.sub( interestDue_ );
+        totalDebt = totalDebt.sub( principleValue );
         return true;
     }
 
     function withdrawPrincipleAndForfeitInterest() external override returns ( bool ) {
         uint amountToWithdraw_ = depositorInfo[msg.sender].principleAmount;
+        uint principleValue = IBondingCalculator( bondCalculator )
+            .principleValuation( principleToken, principleAmount_ ).div( 1e9 );
+
         require( amountToWithdraw_ > 0, "user has no principle to withdraw" );
 
         uint interestToDelete_ = depositorInfo[msg.sender].interestDue;
 
         delete depositorInfo[msg.sender];
 
-        totalDebt = totalDebt.sub( interestToDelete_ );
+        totalDebt = totalDebt.sub( principleValue );
 
         IERC20( principleToken ).safeTransfer( msg.sender, amountToWithdraw_ );
 
+        return true;
+    }
+
+    function transferOwnership( address newOwner ) external returns ( bool ) {
+        owner = newOwner;
         return true;
     }
 
@@ -1044,6 +1053,10 @@ contract OHMPrincipleDepository is IPrincipleDepository, Ownable {
 
     function _calculateBondInterest( uint principleValue_ ) internal view returns ( uint _interestDue ) {
         _interestDue = FixedPoint.fraction( principleValue_, _calcPremium() ).decode112with18().div( 1e16 );
+    }
+
+    function calculatePremium() external view override returns ( uint _premium ) {
+        _premium = _calcPremium();
     }
 
     function _calcPremium() internal view returns ( uint _premium ) {
