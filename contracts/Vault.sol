@@ -89,54 +89,6 @@ library SafeMathInt {
     }
 }
 
-interface IBondingCalculator {
-
-  function calcDebtRatio( uint pendingDebtDue_, uint managedTokenTotalSupply_ ) external pure returns ( uint debtRatio_ );
-
-  function calcBondPremium( uint debtRatio_, uint bondScalingFactor ) external pure returns ( uint premium_ );
-
-  function calcPrincipleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) external pure returns ( uint principleValuation_ );
-
-  function principleValuation( address principleTokenAddress_, uint amountDeposited_ ) external view returns ( uint principleValuation_ );
-
-  function calculateBondInterest( address treasury_, address principleTokenAddress_, uint amountDeposited_, uint bondScalingFactor ) external returns ( uint interestDue_ );
-}
-/**
-interface IPrincipleDepository {
-
-  function getCurrentBondTerm() external returns ( uint, uint );
-
-  function treasury() external returns ( address );
-
-  function getBondCalculator() external returns ( address );
-
-  function isPrincipleToken( address ) external returns ( bool );
-
-  function getDepositorInfoForDepositor( address ) external returns ( uint, uint, uint );
-
-  function addPrincipleToken( address newPrincipleToken_ ) external returns ( bool );
-
-  function setTreasury( address newTreasury_ ) external returns ( bool );
-
-  function addBondTerm( address bondPrincipleToken_, uint256 bondScalingFactor_, uint256 bondingPeriodInBlocks_ ) external returns ( bool );
-
-  function getDepositorInfo( address depositorAddress_) external view returns ( uint principleAmount_, uint interestDue_, uint bondMaturationBlock_);
-
-  function depositBondPrinciple( address bondPrincipleTokenToDeposit_, uint256 amountToDeposit_ ) external returns ( bool );
-
-  function depositBondPrincipleWithPermit( address bondPrincipleTokenToDeposit_, uint256 amountToDeposit_, uint256 deadline, uint8 v, bytes32 r, bytes32 s ) external returns ( bool );
-
-  function withdrawPrincipleAndForfeitInterest( address bondPrincipleToWithdraw_ ) external returns ( bool );
-
-  function redeemBond(address bondPrincipleToRedeem_ ) external returns ( bool );
-}
-*/
-interface ITreasury {
-  function getBondingCalculator() external returns ( address );
-  function getTimelockEndBlock() external returns ( uint );
-  function getManagedToken() external returns ( address );
-}
-
 library Address {
 
   function isContract(address account) internal view returns (bool) {
@@ -323,159 +275,187 @@ interface IERC20Mintable {
   function mint( address account_, uint256 ammount_ ) external;
 }
 
+///////////////////////////////////////// End of flatten \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+interface IBondingCalculator {
+    function calcDebtRatio( uint pendingDebtDue_, uint managedTokenTotalSupply_ ) external pure returns ( uint debtRatio_ );
+    function calcBondPremium( uint debtRatio_, uint bondScalingFactor ) external pure returns ( uint premium_ );
+    function calcPrincipleValuation( uint k_, uint amountDeposited_, uint totalSupplyOfTokenDeposited_ ) external pure returns ( uint principleValuation_ );
+    function principleValuation( address principleTokenAddress_, uint amountDeposited_ ) external view returns ( uint principleValuation_ );
+    function calculateBondInterest( address treasury_, address principleTokenAddress_, uint amountDeposited_, uint bondScalingFactor ) external returns ( uint interestDue_ );
+}
+
+interface ITreasury {
+    function getBondingCalculator() external returns ( address );
+    function getTimelockEndBlock() external returns ( uint );
+    function getManagedToken() external returns ( address );
+}
+
 contract Vault is ITreasury, Ownable {
 
-  using SafeMath for uint;
-  using SafeMathInt for int;
-  using SafeERC20 for IERC20;
+    using SafeMath for uint;
+    using SafeMathInt for int;
+    using SafeERC20 for IERC20;
 
-  event TimelockStarted( uint timelockEndBlock );
+    event TimelockStarted( uint timelockEndBlock );
 
-  bool public isInitialized;
+    bool public isInitialized;
 
-  uint public timelockDurationInBlocks;
-  uint public override getTimelockEndBlock;
+    uint public timelockDurationInBlocks;
+    uint public override getTimelockEndBlock;
 
-  address public daoWallet;
-  address public LPRewardsContract;
-  address public stakingContract;
+    address public daoWallet;
+    address public LPRewardsContract; // Pool 2 rewards contract
+    address public stakingContract;
 
-  uint public LPProfitShare;
+    uint public LPProfitShare; // % = (1 / LPProfitShare)
 
-  address public override getManagedToken;
-  address public getReserveToken;
-  address public getPrincipleToken;
+    address public override getManagedToken; // OHM
+    address public getReserveToken; // DAI
+    address public getPrincipleToken; // OHM-DAI LP
 
-  address public override getBondingCalculator;
+    address public override getBondingCalculator;
+    
+    mapping( address => bool ) public isPrincipleDepositor;
+    
+    mapping( address => bool ) public isReserveDepositor;
 
-  mapping( address => bool ) public isReserveToken;
-
-  mapping( address => bool ) public isPrincipleToken;
-  
-  mapping( address => bool ) public isPrincipleDepositor;
-  
-  mapping( address => bool ) public isReserveDepositor;
-
-  modifier notInitialized() {
-    require( !isInitialized );
-    _;
-  }
-
-  modifier isTimelockExpired() {
-    require( getTimelockEndBlock != 1 );
-    require( timelockDurationInBlocks > 1 );
-    require( block.number >= getTimelockEndBlock );
-    _;
-  }
-
-  modifier isTimelockStarted() {
-    if( getTimelockEndBlock != 0 ) {
-      emit TimelockStarted( getTimelockEndBlock );
+    modifier notInitialized() {
+        require( !isInitialized );
+        _;
     }
-    _;
-  }
 
-  function setDAOWallet( address newDAOWallet_ ) external onlyOwner() returns ( bool ) {
-    daoWallet = newDAOWallet_;
-    return true;
-  }
+    modifier isTimelockExpired() {
+        require( getTimelockEndBlock != 1 );
+        require( timelockDurationInBlocks > 1 );
+        require( block.number >= getTimelockEndBlock );
+        _;
+    }
 
-  function setStakingContract( address newStakingContract_ ) external onlyOwner() returns ( bool ) {
-    stakingContract = newStakingContract_;
-    return true;
-  }
+    modifier isTimelockStarted() {
+        if( getTimelockEndBlock != 0 ) {
+          emit TimelockStarted( getTimelockEndBlock );
+        }
+        _;
+    }
 
-  function setLPRewardsContract( address newLPRewardsContract_ ) external onlyOwner() returns ( bool ) {
-    LPRewardsContract = newLPRewardsContract_;
-    return true;
-  }
+    function setDAOWallet( address newDAOWallet_ ) external onlyOwner() returns ( bool ) {
+        daoWallet = newDAOWallet_;
+        return true;
+    }
 
-  function setLPProfitShare( uint newDAOProfitShare_ ) external onlyOwner() returns ( bool ) {
-    LPProfitShare = newDAOProfitShare_;
-    return true;
-  }
+    function setStakingContract( address newStakingContract_ ) external onlyOwner() returns ( bool ) {
+        stakingContract = newStakingContract_;
+        return true;
+    }
 
-  function initialize(
-    address newManagedToken_,
-    address newReserveToken_,
-    address newBondingCalculator_
-  ) external onlyOwner() notInitialized() returns ( bool ) {
-    getManagedToken = newManagedToken_;
-    getReserveToken = newReserveToken_;
-    getBondingCalculator = newBondingCalculator_;
-    timelockDurationInBlocks = 1;
-    isInitialized = true;
-    return true;
-  }
+    function setLPRewardsContract( address newLPRewardsContract_ ) external onlyOwner() returns ( bool ) {
+        LPRewardsContract = newLPRewardsContract_;
+        return true;
+    }
 
-  function setPrincipleToken( address newPrincipleToken_ ) external onlyOwner() returns ( bool ) {
-    getPrincipleToken = newPrincipleToken_;
-    isPrincipleToken[newPrincipleToken_] = true;
-    return true;
-  }
-  
-  function setPrincipleDepositor( address newDepositor_ ) external onlyOwner() returns ( bool ) {
-    isPrincipleDepositor[newDepositor_] = true;
-    return true;
-  }
-  
-  function setReserveDepositor( address newDepositor_ ) external onlyOwner() returns ( bool ) {
-    isReserveDepositor[newDepositor_] = true;
-    return true;
-  }
-  
-  function removePrincipleDepositor( address depositor_ ) external onlyOwner() returns ( bool ) {
-    isPrincipleDepositor[depositor_] = false;
-    return true;
-  }
-  
-  function removeReserveDepositor( address depositor_ ) external onlyOwner() returns ( bool ) {
-    isReserveDepositor[depositor_] = false;
-    return true;
-  }
+    function setLPProfitShare( uint newDAOProfitShare_ ) external onlyOwner() returns ( bool ) {
+        LPProfitShare = newDAOProfitShare_;
+        return true;
+    }
 
-  function rewardsDepositPrinciple( uint depositAmount_ ) external returns ( bool ) {
-    require(isPrincipleDepositor[msg.sender] == true, "Not allowed to deposit");
-    address principleToken = getPrincipleToken;
-    IERC20( principleToken ).safeTransferFrom( msg.sender, address(this), depositAmount_ );
-    uint value = IBondingCalculator( getBondingCalculator ).principleValuation( principleToken, depositAmount_ ).div( 1e9 );
-    uint forLP = value.div( LPProfitShare );
-    IERC20Mintable( getManagedToken ).mint( stakingContract, value.sub( forLP ) );
-    IERC20Mintable( getManagedToken ).mint( LPRewardsContract, forLP );
-    return true;
-  }
+    function initialize(
+        address newManagedToken_,
+        address newReserveToken_,
+        address newBondingCalculator_
+    ) external onlyOwner() notInitialized() returns ( bool ) {
+        getManagedToken = newManagedToken_; // OHM address
+        getReserveToken = newReserveToken_; // DAI address
+        getBondingCalculator = newBondingCalculator_;
+        timelockDurationInBlocks = 1;
+        isInitialized = true;
+        return true;
+    }
+    
+    // Approves an address to deposit LP and receive OHM
+    function setPrincipleDepositor( address newDepositor_ ) external onlyOwner() returns ( bool ) {
+        isPrincipleDepositor[newDepositor_] = true;
+        return true;
+    }
+    
+    // Approves an address to deposit DAI and receive OHM
+    function setReserveDepositor( address newDepositor_ ) external onlyOwner() returns ( bool ) {
+        isReserveDepositor[newDepositor_] = true;
+        return true;
+    }
+    
+    // Disapproves an address from depositing LP to receive OHM
+    function removePrincipleDepositor( address depositor_ ) external onlyOwner() returns ( bool ) {
+        isPrincipleDepositor[depositor_] = false;
+        return true;
+    }
+    
+    // Disapproves an address from depositing DAI to receive OHM
+    function removeReserveDepositor( address depositor_ ) external onlyOwner() returns ( bool ) {
+        isReserveDepositor[depositor_] = false;
+        return true;
+    }
 
- function depositReserves( uint amount_ ) external returns ( bool ) {
-    require( isReserveDepositor[msg.sender] == true, "Not allowed to deposit" );
-    IERC20( getReserveToken ).safeTransferFrom( msg.sender, address(this), amount_ );
-    IERC20Mintable( getManagedToken ).mint( msg.sender, amount_.div( 10 ** IERC20( getManagedToken ).decimals() ) );
-    return true;
-  }
+    // Allows an approved depositor to deposit LP to create OHM
+    // New OHM is sent to LPRewardsContract and the staking contract
+    function rewardsDepositPrinciple( uint depositAmount_ ) external returns ( bool ) {
+        require(isPrincipleDepositor[msg.sender] == true, "Not allowed to deposit");
 
-  function depositPrinciple( uint depositAmount_ ) external returns ( bool ) {
-    require( isPrincipleDepositor[msg.sender] == true, "Not allowed to deposit" );
-    IERC20( getPrincipleToken ).safeTransferFrom( msg.sender, address(this), depositAmount_ );
-    uint value = IBondingCalculator( getBondingCalculator ).principleValuation( getPrincipleToken, depositAmount_ ).div( 1e9 );
-    IERC20Mintable( getManagedToken ).mint( msg.sender, value );
-    return true;
-  }
-  
-  function migrateReserveAndPrinciple() external onlyOwner() isTimelockExpired() returns ( bool saveGas_ ) {
-    IERC20( getReserveToken ).safeTransfer( daoWallet, IERC20( getReserveToken ).balanceOf( address( this ) ) );
-    IERC20( getPrincipleToken ).safeTransfer( daoWallet, IERC20( getPrincipleToken ).balanceOf( address( this ) ) );
-    return true;
-  }
+        address principleToken = getPrincipleToken;
+        IERC20( principleToken ).safeTransferFrom( msg.sender, address(this), depositAmount_ );
 
-  function setTimelock( uint newTimelockDurationInBlocks_ ) external onlyOwner() returns ( bool ) {
-    require( newTimelockDurationInBlocks_ > timelockDurationInBlocks, "Can only extend timelock" );
-    timelockDurationInBlocks = newTimelockDurationInBlocks_;
-    return true;
-  }
+        // Must remove 9 decimals to account for OHM token decimals
+        uint value = IBondingCalculator( getBondingCalculator ).principleValuation( principleToken, depositAmount_ ).div( 1e9 );
 
-  function startTimelock() external onlyOwner() returns ( bool ) {
-    require( timelockDurationInBlocks > 1, "Timelock Not Set");
-    getTimelockEndBlock = block.number.add( timelockDurationInBlocks );
-    emit TimelockStarted( getTimelockEndBlock );
-    return true;
-  }
+        uint forLP = value.div( LPProfitShare ); // Amount to give LP rewards contract
+        IERC20Mintable( getManagedToken ).mint( stakingContract, value.sub( forLP ) );
+        IERC20Mintable( getManagedToken ).mint( LPRewardsContract, forLP );
+
+        return true;
+    }
+
+    // Allows approved depositor to deposit amount_ DAI and receive OHM 1:1
+    function depositReserves( uint amount_ ) external returns ( bool ) {
+        require( isReserveDepositor[msg.sender] == true, "Not allowed to deposit" );
+
+        IERC20( getReserveToken ).safeTransferFrom( msg.sender, address(this), amount_ );
+        IERC20Mintable( getManagedToken ).mint( msg.sender, amount_.div( 10 ** IERC20( getManagedToken ).decimals() ) );
+
+        return true;
+    }
+
+    // Allows approved depositor to deposit amount_ LP and receive OHM 1:1 with calculated value
+    function depositPrinciple( uint amount_ ) external returns ( bool ) {
+        require( isPrincipleDepositor[msg.sender] == true, "Not allowed to deposit" );
+
+        IERC20( getPrincipleToken ).safeTransferFrom( msg.sender, address(this), amount_ );
+
+        uint value = IBondingCalculator( getBondingCalculator ).principleValuation( getPrincipleToken, amount_ ).div( 1e9 );
+
+        IERC20Mintable( getManagedToken ).mint( msg.sender, value );
+
+        return true;
+    }
+    
+    // Sends assets to DAO if timelock has expired (facilitates migrating to new vault contract)
+    function migrateReserveAndPrinciple() external onlyOwner() isTimelockExpired() returns ( bool saveGas_ ) {
+        IERC20( getReserveToken ).safeTransfer( daoWallet, IERC20( getReserveToken ).balanceOf( address( this ) ) );
+        IERC20( getPrincipleToken ).safeTransfer( daoWallet, IERC20( getPrincipleToken ).balanceOf( address( this ) ) );
+        return true;
+    }
+
+    // Sets timelock for migration
+    function setTimelock( uint newTimelockDurationInBlocks_ ) external onlyOwner() returns ( bool ) {
+        require( newTimelockDurationInBlocks_ > timelockDurationInBlocks, "Can only extend timelock" );
+        timelockDurationInBlocks = newTimelockDurationInBlocks_;
+        return true;
+    }
+
+    // Starts timelock for migration
+    function startTimelock() external onlyOwner() returns ( bool ) {
+        require( timelockDurationInBlocks > 1, "Timelock Not Set");
+        getTimelockEndBlock = block.number.add( timelockDurationInBlocks );
+        emit TimelockStarted( getTimelockEndBlock );
+        return true;
+    }
 }
