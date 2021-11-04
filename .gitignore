@@ -1,0 +1,8 @@
+node_modules/
+artifacts/
+cache/
+
+.secret*
+whitelist.txt
+.vscode/settings.json
+
