@@ -16,14 +16,17 @@ async function main() {
     { name: 'CLAM-MAI', address: '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d' },
   ]
 
-  for (const { name, address } of bonds) {
-    const bond = OtterBondDepository.attach(address)
-    await fetchBondInfo(name, bond)
-    bond.on('BondPriceChanged', async () => {
-      console.log('==== Bond price changed ====')
+  setInterval(async () => {
+    console.log('===' + new Date())
+    for (const { name, address } of bonds) {
+      const bond = OtterBondDepository.attach(address)
       await fetchBondInfo(name, bond)
-    })
-  }
+      // bond.on('BondPriceChanged', async () => {
+      //   console.log(`==== Bond ${name} price changed ====`)
+      //   await fetchBondInfo(name, bond)
+      // })
+    }
+  }, 60 * 1000)
 }
 
 async function fetchBondInfo(name, bond) {
