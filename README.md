@@ -26,7 +26,8 @@ Local Setup Steps:
 |sCLAM           |[0x3949F058238563803b5971711Ad19551930C8209](https://polygonscan.com/address/0x3949F058238563803b5971711Ad19551930C8209)| Staked Clam|
 |Treasury       |[0xab328Ca61599974b0f577d1F8AB0129f2842d765](https://polygonscan.com/address/0xab328Ca61599974b0f577d1F8AB0129f2842d765)| OtterClam Treasury holds all the assets        |
 |Staking |[0xcF2A11937A906e09EbCb8B638309Ae8612850dBf](https://polygonscan.com/address/0xcF2A11937A906e09EbCb8B638309Ae8612850dBf/)| Main Staking contract responsible for calling rebases every 28800 seconds|
-|StakingHelper  |[0xc8c436271f9a6f10a5b80c8b8ed7d0e8f37a612d](https://polygonscan.com/address/0xe7bcBE1fB4F0EAe667feB64b007176Ac790675f2)| Helper Contract to Stake with 0 warmup |
+|StakingHelper  |[0xe7bcBE1fB4F0EAe667feB64b007176Ac790675f2](https://polygonscan.com/address/0xe7bcBE1fB4F0EAe667feB64b007176Ac790675f2)| Helper Contract to Stake with 0 warmup |
+|StakingHelper V2 |[0x22f587ecf472670c61aa4715d0b76d2fa40a9798](https://polygonscan.com/address/0x22f587ecf472670c61aa4715d0b76d2fa40a9798)| Helper Contract to Stake with 0 warmup |
 |DAO            |[0x929A27c46041196e1a49C7B459d63eC9A20cd879](https://polygonscan.com/address/0x929A27c46041196e1a49C7B459d63eC9A20cd879)|Storage Wallet for DAO under MS |
 |Staking Warm Up|[0x314de54E2B64E36F4B0c75079C7FB7f894750014](https://polygonscan.com/address/0x314de54E2B64E36F4B0c75079C7FB7f894750014)| Instructs the Staking contract when a user can claim sCLAM |
 
