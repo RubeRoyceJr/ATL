@@ -5,7 +5,7 @@ async function main() {
   const OtterBondDepository = await ethers.getContractFactory(
     'OtterBondDepository'
   )
-  const bondType = 'mai'
+  const bondType = 'lp'
 
   const bond =
     bondType == 'mai'
@@ -14,11 +14,11 @@ async function main() {
 
   const bcvCurrent = (await bond.terms())[0].toNumber()
 
-  const add = true
-  const adjustment = 2
-  const bcvTarget = 150
+  const add = false
+  const adjustment = 1
+  const bcvTarget = 38
   const buffer = 0
-  const step = Math.ceil(Math.abs(bcvCurrent - bcvTarget) / adjustment)
+  const step = Math.ceil(Math.abs(bcvCurrent - bcvTarget) / adjustment) + 1
 
   console.log(
     `adjust bond ${bondType}: ` +
@@ -31,25 +31,24 @@ async function main() {
           step,
           buffer,
         },
+        null,
         2
       )
   )
   await (await bond.setAdjustment(add, adjustment, bcvTarget, buffer)).wait(2)
 
   console.log('adjusted')
-  return
 
-  if (bondType == 'mai') {
-    const nonce = await signer.getTransactionCount()
-    for (let i = 0; i < step; i++) {
-      await bond.deposit(
-        ethers.utils.parseEther('0.8'),
-        ethers.utils.parseUnits('9999', 9),
-        signer.address,
-        { nonce: nonce + i }
-      )
-      console.log('adjust: ' + i)
-    }
+  const nonce = await signer.getTransactionCount()
+  const amount = bondType === 'mai' ? '0.6' : '0.000002'
+  for (let i = 0; i < step; i++) {
+    await bond.deposit(
+      ethers.utils.parseEther(amount),
+      ethers.utils.parseUnits('9999', 9),
+      signer.address,
+      { nonce: nonce + i }
+    )
+    console.log('adjust: ' + i)
   }
 
   console.log('done')

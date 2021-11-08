@@ -2,7 +2,7 @@ const { ethers, timeAndMine } = require('hardhat')
 const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
 
-describe.only('IDO', () => {
+describe('IDO', () => {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 

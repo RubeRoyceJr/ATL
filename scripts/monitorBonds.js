@@ -16,15 +16,33 @@ async function main() {
     { name: 'CLAM-MAI', address: '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d' },
   ]
 
+  for (const { name, address } of bonds) {
+    const bond = OtterBondDepository.attach(address)
+    await fetchBondInfo(name, bond)
+    bond.on('BondCreated', async (deposit, payout, _, priceInUSD) => {
+      console.log(`==== New Bond ${name} created! ==== ` + new Date())
+      console.log(
+        JSON.stringify(
+          {
+            deposit: ethers.utils.formatEther(deposit),
+            payout: ethers.utils.formatUnits(payout, 9),
+            bondPrice: priceFormatter.format( ethers.utils.formatEther(priceInUSD)),
+            total: priceFormatter.format(
+              ethers.utils.formatEther(payout.mul(priceInUSD).div(1e9))
+            ),
+          },
+          null,
+          2
+        )
+      )
+    })
+  }
+
   setInterval(async () => {
-    console.log('===' + new Date())
+    console.log('==== ' + new Date())
     for (const { name, address } of bonds) {
       const bond = OtterBondDepository.attach(address)
       await fetchBondInfo(name, bond)
-      // bond.on('BondPriceChanged', async () => {
-      //   console.log(`==== Bond ${name} price changed ====`)
-      //   await fetchBondInfo(name, bond)
-      // })
     }
   }, 60 * 1000)
 }
@@ -33,19 +51,19 @@ async function fetchBondInfo(name, bond) {
   const marketPrice = Number(
     ethers.utils.formatUnits(await getMarketPrice(), 9)
   )
-  const [terms, debtRatio, bondPrice, adjustment] = await Promise.all([
+  const [terms, debtRatio, price, adjustment] = await Promise.all([
     bond.terms(),
     bond.standardizedDebtRatio(),
     bond.bondPriceInUSD(),
     bond.adjustment(),
   ])
-  const price = Number(ethers.utils.formatEther(bondPrice))
+  const bondPrice = Number(ethers.utils.formatEther(price))
   console.log(
     JSON.stringify(
       {
         name,
         marketPrice: priceFormatter.format(marketPrice),
-        price: priceFormatter.format(price),
+        bondPrice: priceFormatter.format(bondPrice),
         bcv: terms[0].toString(),
         adjustment: `${
           adjustment[0] ? '+' : '-'
@@ -57,7 +75,7 @@ async function fetchBondInfo(name, bond) {
         ROI: Intl.NumberFormat('en', {
           style: 'percent',
           minimumFractionDigits: 2,
-        }).format((marketPrice - price) / marketPrice),
+        }).format((marketPrice - bondPrice) / bondPrice),
       },
       null,
       2

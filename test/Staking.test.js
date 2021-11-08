@@ -140,7 +140,10 @@ describe('Staking', () => {
       )
 
       await expect(() =>
-        stakingHelper.stake(BigNumber.from(100).mul(BigNumber.from(10).pow(9)))
+        stakingHelper.stake(
+          BigNumber.from(100).mul(BigNumber.from(10).pow(9)),
+          deployer.address
+        )
       ).to.changeTokenBalance(
         sClam,
         deployer,
@@ -158,7 +161,8 @@ describe('Staking', () => {
       )
 
       await stakingHelper.stake(
-        BigNumber.from(100).mul(BigNumber.from(10).pow(9))
+        BigNumber.from(100).mul(BigNumber.from(10).pow(9)),
+        deployer.address
       )
 
       await expect(() => staking.rebase()).to.changeTokenBalance(
@@ -178,7 +182,8 @@ describe('Staking', () => {
       )
 
       await stakingHelper.stake(
-        BigNumber.from(100).mul(BigNumber.from(10).pow(9))
+        BigNumber.from(100).mul(BigNumber.from(10).pow(9)),
+        deployer.address
       )
 
       // 0 -> 1: no reward
@@ -211,7 +216,8 @@ describe('Staking', () => {
       )
 
       await stakingHelper.stake(
-        BigNumber.from(100).mul(BigNumber.from(10).pow(9))
+        BigNumber.from(100).mul(BigNumber.from(10).pow(9)),
+        deployer.address,
       )
 
       // 0 -> 1: no reward

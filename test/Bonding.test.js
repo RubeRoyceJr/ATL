@@ -100,7 +100,7 @@ describe('Bonding', () => {
     await treasury.queue('0', daiBond.address)
     await treasury.toggle('0', daiBond.address, zeroAddress)
 
-    await daiBond.setStaking(staking.address, stakingHelper.address)
+    await daiBond.setStaking(stakingHelper.address, true)
 
     await clam.approve(stakingHelper.address, largeApproval)
     await dai.approve(treasury.address, largeApproval)
@@ -221,6 +221,49 @@ describe('Bonding', () => {
       await expect(() =>
         daiBond.redeem(deployer.address, false)
       ).to.changeTokenBalance(clam, deployer, totalClam - totalClam.div(5))
+    })
+
+    it('should staked directly', async () => {
+      await treasury.deposit(
+        BigNumber.from(10000).mul(BigNumber.from(10).pow(18)),
+        dai.address,
+        BigNumber.from(7500).mul(BigNumber.from(10).pow(9))
+      )
+
+      const bcv = 300
+      const bondVestingLength = 10
+      const minBondPrice = 400 // bond price = $4
+      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const daoFee = 10000 // DAO fee for bond
+      const maxBondDebt = '8000000000000000'
+      const initialBondDebt = 0
+      await daiBond.initializeBondTerms(
+        bcv,
+        bondVestingLength,
+        minBondPrice,
+        maxBondPayout, // Max bond payout,
+        daoFee,
+        maxBondDebt,
+        initialBondDebt
+      )
+
+      let bondPrice = await daiBond.bondPriceInUSD()
+      console.log('bond price: ' + formatEther(bondPrice))
+
+      let depositAmount = BigNumber.from(100).mul(BigNumber.from(10).pow(18))
+      await daiBond.deposit(depositAmount, largeApproval, deployer.address)
+
+      const prevDAOReserve = await clam.balanceOf(daoAddr)
+      expect(prevDAOReserve).to.eq(
+        BigNumber.from(25).mul(BigNumber.from(10).pow(9))
+      )
+      console.log('dao balance: ' + formatUnits(prevDAOReserve, 9))
+
+      await timeAndMine.setTimeIncrease(2)
+
+      await daiBond.redeem(deployer.address, true)
+
+      expect(await sClam.balanceOf(deployer.address)).to.eq('5000000000')
     })
   })
 })
