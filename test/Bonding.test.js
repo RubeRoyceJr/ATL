@@ -113,6 +113,83 @@ describe('Bonding', () => {
     )
   })
 
+  describe('adjust', () => {
+    it('should able to adjust with bcv <= 40', async () => {
+      const bcv = 38
+      const bondVestingLength = 10
+      const minBondPrice = 400 // bond price = $4
+      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const daoFee = 10000 // DAO fee for bond
+      const maxBondDebt = '8000000000000000'
+      const initialBondDebt = 0
+      await daiBond.initializeBondTerms(
+        bcv,
+        bondVestingLength,
+        minBondPrice,
+        maxBondPayout, // Max bond payout,
+        daoFee,
+        maxBondDebt,
+        initialBondDebt
+      )
+
+      await daiBond.setAdjustment(true, 1, 50, 0)
+      const adjustment = await daiBond.adjustment()
+      expect(adjustment[0]).to.be.true
+      expect(adjustment[1]).to.eq(1)
+      expect(adjustment[2]).to.eq(50)
+      expect(adjustment[3]).to.eq(0)
+    })
+
+    it('should failed to adjust with too large increment', async () => {
+      const bcv = 100
+      const bondVestingLength = 10
+      const minBondPrice = 400 // bond price = $4
+      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const daoFee = 10000 // DAO fee for bond
+      const maxBondDebt = '8000000000000000'
+      const initialBondDebt = 0
+      await daiBond.initializeBondTerms(
+        bcv,
+        bondVestingLength,
+        minBondPrice,
+        maxBondPayout, // Max bond payout,
+        daoFee,
+        maxBondDebt,
+        initialBondDebt
+      )
+
+      await expect(daiBond.setAdjustment(true, 3, 50, 0)).to.be.revertedWith(
+        'Increment too large'
+      )
+    })
+
+    it('should be able to adjust with normal increment', async () => {
+      const bcv = 100
+      const bondVestingLength = 10
+      const minBondPrice = 400 // bond price = $4
+      const maxBondPayout = 1000 // 1000 = 1% of CLAM total supply
+      const daoFee = 10000 // DAO fee for bond
+      const maxBondDebt = '8000000000000000'
+      const initialBondDebt = 0
+      await daiBond.initializeBondTerms(
+        bcv,
+        bondVestingLength,
+        minBondPrice,
+        maxBondPayout, // Max bond payout,
+        daoFee,
+        maxBondDebt,
+        initialBondDebt
+      )
+
+      await daiBond.setAdjustment(false, 2, 80, 3)
+      const adjustment = await daiBond.adjustment()
+      expect(adjustment[0]).to.be.false
+      expect(adjustment[1]).to.eq(2)
+      expect(adjustment[2]).to.eq(80)
+      expect(adjustment[3]).to.eq(3)
+    })
+  })
+
   describe('deposit', () => {
     it('should get vested fully', async () => {
       await treasury.deposit(

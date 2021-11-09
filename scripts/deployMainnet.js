@@ -71,7 +71,7 @@ async function main() {
   )
   // await (await uniswapFactory.createPair(clam.address, maiAddr)).wait()
   const lpAddress = await uniswapFactory.getPair(clam.address, maiAddr)
-  console.log('LP created: ' + lpAddress)
+  console.log('LP: ' + lpAddress)
 
   // Deploy bonding calc
   const BondingCalculator = await ethers.getContractFactory(
@@ -145,7 +145,7 @@ async function main() {
   // Deploy staking helper
   const StakingHelper = await ethers.getContractFactory('OtterStakingHelper')
   const stakingHelper = StakingHelper.attach(
-    '0xe7bcBE1fB4F0EAe667feB64b007176Ac790675f2'
+    '0x22F587EcF472670c61aa4715d0b76D2fa40A9798'
   )
   // const stakingHelper = await StakingHelper.deploy(
   //   staking.address,
@@ -166,17 +166,17 @@ async function main() {
   // await maiBond.deployTransaction.wait()
 
   const MaiClamBond = await ethers.getContractFactory('OtterBondDepository')
-  const maiClamBond = MaiClamBond.attach(
-    '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
-  )
-  // const maiClamBond = await MaiClamBond.deploy(
-  //   clam.address,
-  //   lpAddress,
-  //   treasury.address,
-  //   daoAddr,
-  //   bondingCalculator.address
+  // const maiClamBond = MaiClamBond.attach(
+  //   '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d'
   // )
-  // await maiClamBond.deployTransaction.wait()
+  const maiClamBond = await MaiClamBond.deploy(
+    clam.address,
+    lpAddress,
+    treasury.address,
+    daoAddr,
+    bondingCalculator.address
+  )
+  await maiClamBond.deployTransaction.wait()
 
   console.log(
     JSON.stringify({
@@ -198,61 +198,59 @@ async function main() {
     })
   )
 
-  /*
   // queue and toggle MAI reserve depositor
-  await (await treasury.queue('0', maiBond.address)).wait()
+  // await (await treasury.queue('0', maiBond.address)).wait()
 
   // queue and toggle MAI-CLAM liquidity depositor
-  await (await treasury.queue('4', maiClamBond.address)).wait()
+  // await (await treasury.queue('4', maiClamBond.address)).wait()
 
   // Set bond terms
-  await (await maiBond.initializeBondTerms(
-    maiBondBCV,
-    bondVestingLength,
-    minBondPrice,
-    maxBondPayout,
-    bondFee,
-    maxBondDebt,
-    initialBondDebt
-  )).wait()
-  await (await maiClamBond.initializeBondTerms(
-    maiBondBCV,
-    bondVestingLength,
-    minBondPrice,
-    maxBondPayout,
-    bondFee,
-    maxBondDebt,
-    initialBondDebt
-  )).wait()
+  // await (await maiBond.initializeBondTerms(
+  //   maiBondBCV,
+  //   bondVestingLength,
+  //   minBondPrice,
+  //   maxBondPayout,
+  //   bondFee,
+  //   maxBondDebt,
+  //   initialBondDebt
+  // )).wait()
+  // await (await maiClamBond.initializeBondTerms(
+  //   '40',
+  //   bondVestingLength,
+  //   minBondPrice,
+  //   maxBondPayout,
+  //   bondFee,
+  //   maxBondDebt,
+  //   initialBondDebt
+  // )).wait()
 
   // Set staking for bonds
-  await (await maiBond.setStaking(staking.address, stakingHelper.address)).wait()
-  await (await maiClamBond.setStaking(staking.address, stakingHelper.address)).wait()
+  // await (await maiBond.setStaking(stakingHelper.address, true)).wait()
+  await (await maiClamBond.setStaking(stakingHelper.address, true)).wait()
 
   // Initialize sCLAM and set the index
-  await (await sCLAM.initialize(staking.address)).wait()
-  await (await sCLAM.setIndex(initialIndex)).wait()
+  // await (await sCLAM.initialize(staking.address)).wait()
+  // await (await sCLAM.setIndex(initialIndex)).wait()
 
   // set distributor contract and warmup contract
-  await (await staking.setContract('0', stakingDistributor.address)).wait()
-  await (await staking.setContract('1', stakingWarmup.address)).wait()
-  await (await staking.setWarmup(warmupPeriod)).wait()
+  // await (await staking.setContract('0', stakingDistributor.address)).wait()
+  // await (await staking.setContract('1', stakingWarmup.address)).wait()
+  // await (await staking.setWarmup(warmupPeriod)).wait()
 
   // Set treasury for CLAM token
-  await (await clam.setVault(treasury.address)).wait()
+  // await (await clam.setVault(treasury.address)).wait()
 
   // Add staking contract as distributor recipient
-  await (await stakingDistributor.addRecipient(staking.address, initialRewardRate)).wait()
+  // await (await stakingDistributor.addRecipient(staking.address, initialRewardRate)).wait()
 
   // queue and toggle reward manager
-  await (await treasury.queue('8', stakingDistributor.address)).wait()
-  */
+  // await (await treasury.queue('8', stakingDistributor.address)).wait()
 
   // TODO: toggle after 43200 blocks
   //  await treasury.toggle('0', maiBond.address, zeroAddress)
   //  await (await treasury.toggle('4', maiClamBond.address, zeroAddress)).wait()
   //  await treasury.toggle('8', stakingDistributor.address, zeroAddress)
-  await treasury.queue('9', sCLAM.address)
+  // await treasury.queue('9', sCLAM.address)
 }
 
 main()

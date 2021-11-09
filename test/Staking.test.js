@@ -7,7 +7,7 @@ describe('Staking', () => {
   const largeApproval = '100000000000000000000000000000000'
 
   // What epoch will be first epoch
-  const firstEpochNumber = '0'
+  const firstEpochNumber = '1'
 
   // How many seconds are in each epoch
   const epochLength = 86400 / 3
@@ -37,7 +37,7 @@ describe('Staking', () => {
   beforeEach(async () => {
     ;[deployer, depositor] = await ethers.getSigners()
 
-    firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
+    firstEpochTime = (await deployer.provider.getBlock()).timestamp + 100
 
     const CLAM = await ethers.getContractFactory('OtterClamERC20')
     clam = await CLAM.deploy()
@@ -205,7 +205,7 @@ describe('Staking', () => {
         deployer,
         distribute
       )
-      expect(await sClam.index()).to.eq('8500000000')
+      expect(await sClam.index()).to.eq('1000000000')
     })
 
     it('should not rebase before epoch end', async () => {
@@ -217,7 +217,7 @@ describe('Staking', () => {
 
       await stakingHelper.stake(
         BigNumber.from(100).mul(BigNumber.from(10).pow(9)),
-        deployer.address,
+        deployer.address
       )
 
       // 0 -> 1: no reward
@@ -238,9 +238,73 @@ describe('Staking', () => {
       )
 
       const [, number, endTime, distribute] = await staking.epoch()
-      expect(number).to.eq(1)
+      expect(number).to.eq(2)
       expect(endTime).to.eq(firstEpochTime + 86400 / 3)
       expect(distribute).to.eq('750000000000')
+    })
+  })
+
+  describe('warmup', () => {
+    beforeEach(async () => {
+      await treasury.deposit(
+        BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
+        dai.address,
+        BigNumber.from(750000).mul(BigNumber.from(10).pow(9))
+      )
+    })
+
+    it('in stay in warmup after 1 epoch', async () => {
+      await staking.setWarmup(2)
+
+      await expect(() =>
+        stakingHelper.stake(100 * 1e9, deployer.address)
+      ).to.changeTokenBalance(sClam, deployer, 0)
+
+      const [deposit, gons, expiry, lock] = await staking.warmupInfo(
+        deployer.address
+      )
+      expect(deposit).to.eq(100 * 1e9)
+      expect(expiry).to.eq(3)
+      expect(lock).to.be.false
+
+      await timeAndMine.setTimeIncrease(86400 / 3 + 1)
+      await staking.rebase()
+      await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
+        sClam,
+        deployer,
+        0
+      )
+
+      await timeAndMine.setTimeIncrease(86400 / 3 + 1)
+      await staking.rebase()
+      await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
+        sClam,
+        deployer,
+        850 * 1e9
+      )
+    })
+
+    it('should be able to forfeit without reward', async () => {
+      await staking.setWarmup(2)
+
+      await expect(() =>
+        stakingHelper.stake(100 * 1e9, deployer.address)
+      ).to.changeTokenBalance(sClam, deployer, 0)
+
+      const [deposit, gons, expiry, lock] = await staking.warmupInfo(
+        deployer.address
+      )
+      expect(deposit).to.eq(100 * 1e9)
+      expect(expiry).to.eq(3)
+      expect(lock).to.be.false
+
+      await timeAndMine.setTimeIncrease(86400 / 3 + 1)
+      await staking.rebase()
+      await expect(() => staking.forfeit()).to.changeTokenBalance(
+        clam,
+        deployer,
+        100 * 1e9
+      )
     })
   })
 })

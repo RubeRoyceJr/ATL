@@ -14,9 +14,9 @@ async function main() {
 
   const bcvCurrent = (await bond.terms())[0].toNumber()
 
-  const add = false
+  const add = true
   const adjustment = 1
-  const bcvTarget = 38
+  const bcvTarget = 40
   const buffer = 0
   const step = Math.ceil(Math.abs(bcvCurrent - bcvTarget) / adjustment) + 1
 

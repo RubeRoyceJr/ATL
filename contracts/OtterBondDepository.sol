@@ -3,6 +3,7 @@ pragma solidity 0.7.5;
 
 import "./libraries/Ownable.sol";
 import "./libraries/SafeMath.sol";
+import "./libraries/Math.sol";
 import "./libraries/FixedPoint.sol";
 import "./libraries/ERC20.sol";
 
@@ -179,7 +180,7 @@ contract OtterBondDepository is Ownable {
         uint _target,
         uint _buffer
     ) external onlyOwner() {
-        require( _increment <= terms.controlVariable.mul( 25 ).div( 1000 ), "Increment too large" );
+        require( _increment <= Math.max(terms.controlVariable.mul( 25 ).div( 1000 ), 1), "Increment too large" );
 
         adjustment = Adjust({
             add: _addition,
