@@ -13,7 +13,7 @@ async function main() {
   )
   const bonds = [
     { name: 'MAI', address: '0x28077992bFA9609Ae27458A766470b03D43dEe8A' },
-    { name: 'CLAM-MAI', address: '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d' },
+    { name: 'CLAM-MAI', address: '0x64c766f9A4936c3a4b51C55Ea5C4854E19766035' },
   ]
 
   for (const { name, address } of bonds) {
@@ -26,7 +26,9 @@ async function main() {
           {
             deposit: ethers.utils.formatEther(deposit),
             payout: ethers.utils.formatUnits(payout, 9),
-            bondPrice: priceFormatter.format( ethers.utils.formatEther(priceInUSD)),
+            bondPrice: priceFormatter.format(
+              ethers.utils.formatEther(priceInUSD)
+            ),
             total: priceFormatter.format(
               ethers.utils.formatEther(payout.mul(priceInUSD).div(1e9))
             ),

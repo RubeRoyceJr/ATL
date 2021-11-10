@@ -10,13 +10,13 @@ async function main() {
   const bond =
     bondType == 'mai'
       ? OtterBondDepository.attach('0x28077992bFA9609Ae27458A766470b03D43dEe8A')
-      : OtterBondDepository.attach('0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d')
+      : OtterBondDepository.attach('0x64c766f9A4936c3a4b51C55Ea5C4854E19766035')
 
   const bcvCurrent = (await bond.terms())[0].toNumber()
 
-  const add = true
+  const add = false
   const adjustment = 1
-  const bcvTarget = 40
+  const bcvTarget = 38
   const buffer = 0
   const step = Math.ceil(Math.abs(bcvCurrent - bcvTarget) / adjustment) + 1
 
