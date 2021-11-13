@@ -2,12 +2,7 @@
 pragma solidity 0.7.5;
 
 import './interfaces/IERC20.sol';
-
-interface IStaking {
-    function stake(uint256 _amount, address _recipient) external returns (bool);
-
-    function claim(address _recipient) external;
-}
+import './interfaces/IOtterStaking.sol';
 
 contract OtterStakingHelper {
     address public immutable staking;
@@ -23,7 +18,7 @@ contract OtterStakingHelper {
     function stake(uint256 _amount, address _recipient) external {
         IERC20(CLAM).transferFrom(msg.sender, address(this), _amount);
         IERC20(CLAM).approve(staking, _amount);
-        IStaking(staking).stake(_amount, _recipient);
-        IStaking(staking).claim(_recipient);
+        IOtterStaking(staking).stake(_amount, _recipient);
+        IOtterStaking(staking).claim(_recipient);
     }
 }

@@ -1,24 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
+import "./interfaces/IOtterTreasury.sol";
+import "./interfaces/IOtterStaking.sol";
+
 import "./libraries/Ownable.sol";
 import "./libraries/SafeMath.sol";
 import "./libraries/Math.sol";
 import "./libraries/FixedPoint.sol";
 import "./libraries/ERC20.sol";
 
-interface ITreasury {
-    function deposit( uint _amount, address _token, uint _profit ) external returns ( bool );
-    function valueOfToken( address _token, uint _amount ) external view returns ( uint value_ );
-}
-
 interface IBondCalculator {
     function valuation( address _LP, uint _amount ) external view returns ( uint );
     function markdown( address _LP ) external view returns ( uint );
-}
-
-interface IStaking {
-    function stake( uint _amount, address _recipient ) external returns ( bool );
 }
 
 interface IStakingHelper {
@@ -234,7 +228,7 @@ contract OtterBondDepository is Ownable {
 
         require( _maxPrice >= nativePrice, "Slippage limit: more than max price" ); // slippage protection
 
-        uint value = ITreasury( treasury ).valueOfToken( principle, _amount );
+        uint value = IOtterTreasury( treasury ).valueOfToken( principle, _amount );
         uint payout = payoutFor( value ); // payout to bonder is computed
 
         require( payout >= 10000000, "Bond too small" ); // must be > 0.01 CLAM ( underflow protection )
@@ -251,7 +245,7 @@ contract OtterBondDepository is Ownable {
          */
         IERC20( principle ).safeTransferFrom( msg.sender, address(this), _amount );
         IERC20( principle ).approve( address( treasury ), _amount );
-        ITreasury( treasury ).deposit( _amount, principle, profit );
+        IOtterTreasury( treasury ).deposit( _amount, principle, profit );
 
         if ( fee != 0 ) { // fee is transferred to dao
             IERC20( CLAM ).safeTransfer( DAO, fee );
@@ -328,7 +322,7 @@ contract OtterBondDepository is Ownable {
                 IStakingHelper( stakingHelper ).stake( _amount, _recipient );
             } else {
                 IERC20( CLAM ).approve( staking, _amount );
-                IStaking( staking ).stake( _amount, _recipient );
+                IOtterStaking( staking ).stake( _amount, _recipient );
             }
         }
         return _amount;

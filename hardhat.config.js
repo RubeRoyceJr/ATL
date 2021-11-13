@@ -17,6 +17,15 @@ module.exports = {
         version: '0.7.5',
       },
       {
+        version: '0.6.6',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
         version: '0.5.16', // for uniswap v2
       },
     ],
@@ -33,9 +42,9 @@ module.exports = {
       accounts: [dev],
       gasPrice: 1200000000,
     },
-    // hardhat: {
-    //   gas: 'auto',
-    // },
+    hardhat: {
+      gas: 'auto',
+    },
   },
   etherscan: {
     apiKey: etherscanApiKey,

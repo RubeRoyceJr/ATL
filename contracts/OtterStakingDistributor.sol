@@ -2,13 +2,11 @@
 
 pragma solidity 0.7.5;
 
+import "./interfaces/IOtterTreasury.sol";
+
 import "./libraries/ERC20.sol";
 import "./libraries/Ownable.sol";
 
-
-interface ITreasury {
-    function mintRewards( address _recipient, uint _amount ) external;
-}
 
 contract OtterStakingDistributor is Ownable {
 
@@ -67,7 +65,7 @@ contract OtterStakingDistributor is Ownable {
             // distribute rewards to each recipient
             for ( uint i = 0; i < info.length; i++ ) {
                 if ( info[ i ].rate > 0 ) {
-                    ITreasury( treasury ).mintRewards( // mint and send from treasury
+                    IOtterTreasury( treasury ).mintRewards( // mint and send from treasury
                         info[ i ].recipient,
                         nextRewardAt( info[ i ].rate )
                     );

@@ -1,7 +1,7 @@
 {
-  "name": "olympus-contracts",
+  "name": "otterclam-contracts",
   "version": "1.0.0",
-  "description": "Smart Contracts for Olympus",
+  "description": "Smart Contracts for OtterClam",
   "directories": {
     "test": "test"
   },
@@ -23,6 +23,8 @@
     "@nomiclabs/hardhat-etherscan": "^2.1.7",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/test-helpers": "^0.5.12",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.1",
@@ -34,11 +36,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OlympusDAO/olympus-contracts.git"
+    "url": "git+https://github.com/OtterClam/otter-contracts.git"
   },
   "author": "",
   "bugs": {
-    "url": "https://github.com/OlympusDAO/olympus-contracts/issues"
+    "url": "https://github.com/OtterClam/otter-contracts/issues"
   },
-  "homepage": "https://github.com/OlympusDAO/olympus-contracts#readme"
+  "homepage": "https://github.com/OtterClam/otter-contracts#readme"
 }
