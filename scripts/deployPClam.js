@@ -50,9 +50,7 @@ async function main() {
   const daoAddr = '0x929A27c46041196e1a49C7B459d63eC9A20cd879'
   console.log('Deploying contracts with the account: ' + deployer.address)
 
-  const ClamCirculatingSupply = await ethers.getContractFactory(
-    'ClamCirculatingSupply'
-  )
+  const ClamCirculatingSupply = await ethers.getContractFactory( 'ClamCirculatingSupply')
   // const clamCirculatingSupply = await ClamCirculatingSupply.deploy(
   //   deployer.address
   // )

@@ -14,17 +14,17 @@ interface IUniswapV2Router {
     function addLiquidity(
         address tokenA,
         address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
+        uint256 lpMaiAmountDesired,
+        uint256 lpOldClamAmountDesired,
+        uint256 lpMaiAmountMin,
+        uint256 lpOldClamAmountMin,
         address to,
         uint256 deadline
     )
         external
         returns (
-            uint256 amountA,
-            uint256 amountB,
+            uint256 lpMaiAmount,
+            uint256 lpOldClamAmount,
             uint256 liquidity
         );
 
@@ -32,11 +32,11 @@ interface IUniswapV2Router {
         address tokenA,
         address tokenB,
         uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
+        uint256 lpMaiAmountMin,
+        uint256 lpOldClamAmountMin,
         address to,
         uint256 deadline
-    ) external returns (uint256 amountA, uint256 amountB);
+    ) external returns (uint256 lpMaiAmount, uint256 lpOldClamAmount);
 }
 
 interface IUniswapV2Factory {
@@ -93,19 +93,22 @@ contract ClamTokenMigrator is Ownable {
     function migrate() external {
         require(clamMigrated);
         uint256 oldCLAMAmount = oldCLAM.balanceOf(msg.sender);
+
+        require(oldCLAMAmount > 0);
         oldCLAM.transferFrom(msg.sender, address(this), oldCLAMAmount);
 
         uint256 maiAmount = oldCLAMAmount.mul(1e9);
-        uint256 newCLAMAmount = oldCLAMAmount.div(convertRatio);
-        uint256 profit = oldCLAMAmount - newCLAMAmount;
+        uint256 newCLAMAmountInLP = oldCLAMAmount.div(convertRatio);
+        // uint256 profit = oldCLAMAmount - newCLAMAmountInLP;
 
-        oldCLAM.approve(address(oldTreasury), maiAmount);
+        oldCLAM.safeApprove(address(oldTreasury), maiAmount);
         oldTreasury.withdraw(maiAmount, address(mai));
 
-        mai.approve(address(newTreasury), maiAmount);
-        newTreasury.deposit(maiAmount, address(mai), profit);
+        mai.safeApprove(address(newTreasury), maiAmount);
+        uint256 valueOfMai = oldTreasury.valueOfToken(address(mai), maiAmount);
+        newTreasury.deposit(maiAmount, address(mai), valueOfMai);
 
-        newCLAM.transfer(msg.sender, newCLAMAmount);
+        newCLAM.transfer(msg.sender, newCLAMAmountInLP);
     }
 
     /* ========== OWNABLE ========== */
@@ -116,62 +119,68 @@ contract ClamTokenMigrator is Ownable {
 
         oldSupply = oldCLAM.totalSupply(); // log total supply at time of migration
 
+        uint256 newCLAMTotalSupply = oldSupply.div(convertRatio);
+
+        // withdraw old LP
+        address oldPair = quickFactory.getPair(address(oldCLAM), address(mai));
+        uint256 oldLPAmount = IERC20(oldPair).balanceOf(address(oldTreasury));
+        oldTreasury.manage(oldPair, oldLPAmount);
+
+        IERC20(oldPair).safeApprove(address(quickRouter), oldLPAmount);
+        (uint256 lpMaiAmount, uint256 lpOldClamAmount) = quickRouter
+            .removeLiquidity(
+                address(mai),
+                address(oldCLAM),
+                oldLPAmount,
+                0,
+                0,
+                address(this),
+                1000000000000
+            );
+
+        // burn old clams
+        oldCLAM.safeApprove(address(oldTreasury), lpOldClamAmount);
+        uint256 extraMaiAmount = lpOldClamAmount * 1e9;
+        oldTreasury.withdraw(extraMaiAmount, address(mai));
+
+        // deposit mai from burned clams to the new treasury
+        mai.safeApprove(address(newTreasury), extraMaiAmount);
+        newTreasury.deposit(
+            extraMaiAmount,
+            address(mai),
+            newTreasury.valueOfToken(address(mai), extraMaiAmount)
+        );
+
+        // mint new CLAMs from new treasury
+        uint256 newCLAMAmountInLP = lpOldClamAmount.div(convertRatio);
+        newTreasury.mintRewards(address(this), newCLAMAmountInLP);
+
+        mai.safeApprove(address(quickRouter), lpMaiAmount);
+        newCLAM.safeApprove(address(quickRouter), newCLAMAmountInLP);
+        quickRouter.addLiquidity(
+            address(mai),
+            address(newCLAM),
+            lpMaiAmount,
+            newCLAMAmountInLP,
+            lpMaiAmount,
+            newCLAMAmountInLP,
+            address(newTreasury),
+            100000000000
+        );
+
         // Move mai reserve to new treasury
         uint256 maiBalance = mai.balanceOf(address(oldTreasury));
-
-        uint256 excessReserves = maiBalance.sub(oldSupply * 1e9);
+        uint256 excessReserves = maiBalance.sub(oldCLAM.totalSupply() * 1e9);
         uint256 valueOfMai = oldTreasury.valueOfToken(
             address(mai),
             excessReserves
         );
         oldTreasury.manage(address(mai), excessReserves);
 
-        mai.safeApprove(address(newTreasury), maiBalance);
-        newTreasury.deposit(excessReserves, address(mai), valueOfMai);
-
-        // Move LP to new CLAM & treasury
-        address oldPair = quickFactory.getPair(address(oldCLAM), address(mai));
-        uint256 oldLPAmount = IERC20(oldPair).balanceOf(address(oldTreasury));
-        oldTreasury.manage(oldPair, oldLPAmount);
-
-        IERC20(oldPair).approve(address(quickRouter), oldLPAmount);
-        (uint256 amountA, uint256 amountB) = quickRouter.removeLiquidity(
-            address(mai),
-            address(oldCLAM),
-            oldLPAmount,
-            0,
-            0,
-            address(this),
-            1000000000000
-        );
-
-        uint256 newCLAMAmount = amountB.div(convertRatio);
-        newTreasury.mintRewards(address(this), newCLAMAmount);
-
-        mai.approve(address(quickRouter), amountA);
-        newCLAM.approve(address(quickRouter), newCLAMAmount);
-
-        quickRouter.addLiquidity(
-            address(mai),
-            address(newCLAM),
-            amountA,
-            newCLAMAmount,
-            amountA,
-            newCLAMAmount,
-            address(newTreasury),
-            100000000000
-        );
-
-        // burn old clams and deposit all mai to the new treasury
-        uint256 oldCLAMAmount = oldCLAM.balanceOf(address(this));
-        oldCLAM.approve(address(oldTreasury), oldCLAMAmount);
-        oldTreasury.withdraw(oldCLAMAmount * 1e9, address(mai));
-        uint256 maiAmount = mai.balanceOf(address(this));
-        newTreasury.deposit(
-            maiAmount,
-            address(mai),
-            newTreasury.valueOfToken(address(mai), maiAmount)
-        );
+        mai.safeApprove(address(newTreasury), excessReserves);
+        uint256 newCLAMMinted = newCLAMTotalSupply.sub(newCLAMAmountInLP).sub(1);
+        uint256 profit = valueOfMai.sub(newCLAMMinted);
+        newTreasury.deposit(excessReserves, address(mai), profit);
     }
 
     // Failsafe function to allow owner to withdraw funds sent directly to contract in case someone sends non-ohm tokens to the contract

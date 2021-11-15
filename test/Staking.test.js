@@ -2,7 +2,7 @@ const { ethers, timeAndMine } = require('hardhat')
 const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
 
-describe('Staking', () => {
+describe.only('Staking', () => {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -37,7 +37,7 @@ describe('Staking', () => {
   beforeEach(async () => {
     ;[deployer, depositor] = await ethers.getSigners()
 
-    firstEpochTime = (await deployer.provider.getBlock()).timestamp + 100
+    firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
     const CLAM = await ethers.getContractFactory('OtterClamERC20')
     clam = await CLAM.deploy()
@@ -205,7 +205,7 @@ describe('Staking', () => {
         deployer,
         distribute
       )
-      expect(await sClam.index()).to.eq('1000000000')
+      expect(await sClam.index()).to.eq('8500000000')
     })
 
     it('should not rebase before epoch end', async () => {
@@ -227,7 +227,7 @@ describe('Staking', () => {
         0
       )
 
-      // advanced next block time to next epoch
+      // advanced next block time to same epoch
       await timeAndMine.setTimeIncrease(86400 / 3 - 200)
 
       // 1 -> 1
@@ -241,6 +241,54 @@ describe('Staking', () => {
       expect(number).to.eq(2)
       expect(endTime).to.eq(firstEpochTime + 86400 / 3)
       expect(distribute).to.eq('750000000000')
+    })
+
+    it('should not receive reward', async () => {
+      await treasury.deposit(
+        BigNumber.from(100 * 10000).mul(BigNumber.from(10).pow(18)),
+        dai.address,
+        BigNumber.from(750000).mul(1e9)
+      )
+
+      await stakingHelper.stake(BigNumber.from(100).mul(1e9), deployer.address)
+
+      // 0 -> 1: no reward
+      await expect(() => staking.rebase()).to.changeTokenBalance(
+        sClam,
+        deployer,
+        0
+      )
+
+      // advanced next block time to next epoch
+      await timeAndMine.setTimeIncrease(86400 / 3 + 1)
+
+      // 1 -> 2
+      await expect(() => staking.rebase()).to.changeTokenBalance(
+        sClam,
+        deployer,
+        '750000000000'
+      )
+      expect(await sClam.index()).to.eq('8500000000')
+
+      // set distributor to zero
+      staking.setContract(0, zeroAddress)
+
+      // 2 -> 3, still get reward
+      await timeAndMine.setTimeIncrease(86400 / 3 + 1)
+
+      await expect(() => staking.rebase()).to.changeTokenBalance(
+        sClam,
+        deployer,
+        '752250000000'
+      )
+
+      // 3 -> 4, no reward
+      await timeAndMine.setTimeIncrease(86400 / 3 + 1)
+      await expect(() => staking.rebase()).to.changeTokenBalance(
+        sClam,
+        deployer,
+        0
+      )
     })
   })
 
@@ -264,7 +312,7 @@ describe('Staking', () => {
         deployer.address
       )
       expect(deposit).to.eq(100 * 1e9)
-      expect(expiry).to.eq(3)
+      expect(expiry).to.eq(4)
       expect(lock).to.be.false
 
       await timeAndMine.setTimeIncrease(86400 / 3 + 1)
@@ -295,7 +343,7 @@ describe('Staking', () => {
         deployer.address
       )
       expect(deposit).to.eq(100 * 1e9)
-      expect(expiry).to.eq(3)
+      expect(expiry).to.eq(4)
       expect(lock).to.be.false
 
       await timeAndMine.setTimeIncrease(86400 / 3 + 1)
