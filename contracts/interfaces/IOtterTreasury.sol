@@ -7,4 +7,5 @@ interface IOtterTreasury {
     function valueOfToken( address _token, uint _amount ) external view returns ( uint value_ );
     function mintRewards( address _recipient, uint _amount ) external;
     function manage( address _token, uint _amount ) external;
+    function withdraw( uint _amount, address _token ) external;
 }

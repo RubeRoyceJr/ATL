@@ -134,7 +134,7 @@ contract OtterTreasury is Ownable, IOtterTreasury {
         @param _amount uint
         @param _token address
      */
-    function withdraw( uint _amount, address _token ) external {
+    function withdraw( uint _amount, address _token ) external override {
         require( isReserveToken[ _token ], "Not accepted" ); // Only reserves can be used for redemptions
         require( isReserveSpender[ msg.sender ] == true, "Not approved" );
 

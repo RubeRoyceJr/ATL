@@ -4,7 +4,7 @@ const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
 const { toClamAmount } = require('./helper')
 const UniswapV2FactoryJson = require('@uniswap/v2-core/build/UniswapV2Factory.json')
-const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Factory.json')
+const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Pair.json')
 const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
 
 describe.only('ClamTokenMigrator', () => {
@@ -51,15 +51,15 @@ describe.only('ClamTokenMigrator', () => {
 
     firstEpochTime = (await deployer.provider.getBlock()).timestamp - 100
 
+    const DAI = await ethers.getContractFactory('DAI')
+    dai = await DAI.deploy(0)
+
     const CLAM = await ethers.getContractFactory('OtterClamERC20')
     clam = await CLAM.deploy()
     clam2 = await CLAM.deploy()
 
     const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20')
     sClam = await StakedCLAM.deploy()
-
-    const DAI = await ethers.getContractFactory('DAI')
-    dai = await DAI.deploy(0)
 
     const UniswapV2FactoryContract = ContractFactory.fromSolidity(
       UniswapV2FactoryJson,
@@ -109,6 +109,19 @@ describe.only('ClamTokenMigrator', () => {
       0
     )
 
+    const MigratorContract = await ethers.getContractFactory(
+      'ClamTokenMigrator'
+    )
+    migrator = await MigratorContract.deploy(
+      clam.address,
+      treasury.address,
+      quickRouter.address,
+      quickFactory.address,
+      clam2.address,
+      treasury2.address,
+      dai.address
+    )
+
     // const StakingDistributor = await ethers.getContractFactory(
     //   'OtterStakingDistributor'
     // )
@@ -149,14 +162,30 @@ describe.only('ClamTokenMigrator', () => {
     await clam.setVault(treasury.address)
     await clam2.setVault(treasury2.address)
 
-    // // queue and toggle deployer reserve depositor
+    // queue and toggle deployer reserve depositor
     await treasury.queue('0', deployer.address)
     await treasury.toggle('0', deployer.address, zeroAddress)
     await treasury.queue('4', deployer.address)
     await treasury.toggle('4', deployer.address, zeroAddress)
 
+    // queue and toggle migrator as manager
+    await treasury.queue('1', migrator.address)
+    await treasury.toggle('1', migrator.address, zeroAddress)
+    await treasury.queue('3', migrator.address)
+    await treasury.toggle('3', migrator.address, zeroAddress)
+    await treasury.queue('6', migrator.address)
+    await treasury.toggle('6', migrator.address, zeroAddress)
+    await treasury2.queue('0', migrator.address)
+    await treasury2.toggle('0', migrator.address, zeroAddress)
+    await treasury2.queue('4', migrator.address)
+    await treasury2.toggle('4', migrator.address, zeroAddress)
+    await treasury2.queue('8', migrator.address)
+    await treasury2.toggle('8', migrator.address, zeroAddress)
+
     // await clam.approve(stakingHelper.address, largeApproval)
     await dai.approve(treasury.address, largeApproval)
+    await lp.approve(treasury.address, largeApproval)
+    await clam.approve(migrator.address, largeApproval)
     await dai.approve(quickRouter.address, largeApproval)
     await clam.approve(quickRouter.address, largeApproval)
 
@@ -191,13 +220,54 @@ describe.only('ClamTokenMigrator', () => {
         toClamAmount(oldLPClamAmount),
         ethers.utils.parseEther(String(oldLPDaiAmount)),
         toClamAmount(oldLPClamAmount),
-        treasury.address,
+        deployer.address,
         1000000000000
       )
 
-      // expect(await treasury.excessReserves()).to.eq('123')
+      const lpBalance = await lp.balanceOf(deployer.address)
+      const lpValue = await treasury.valueOfToken(lp.address, lpBalance)
+      await treasury.deposit(lpBalance, lp.address, lpValue)
+
+      const oldClamAmount = await clam.balanceOf(deployer.address)
+      const oldTotalReserves = await treasury.totalReserves()
 
       // migrate contracts
+      await migrator.migrateContracts()
+
+      await migrator.migrate()
+
+      expect(await clam2.balanceOf(deployer.address)).to.eq(
+        oldClamAmount.div(5)
+      )
+      expect(await clam.balanceOf(deployer.address)).to.eq('0')
+
+      // migrator should not have any token left
+      expect(await lp.balanceOf(migrator.address)).to.eq('0')
+      expect(await clam.balanceOf(migrator.address)).to.eq('0')
+      expect(await dai.balanceOf(migrator.address)).to.eq('0')
+
+      // old clam total supply should be 1, locked in QuickSwap
+      expect(await clam.totalSupply()).to.eq('1')
+
+      // old treasury reserve should < 1
+      expect(await dai.balanceOf(treasury.address)).to.eq('1000000000')
+      expect(await lp.balanceOf(treasury.address)).to.eq('0')
+
+      // new LP open in x5 price
+      const [daiAmount, newClamAmount] = await lp2.getReserves()
+      expect(daiAmount).to.eq('1145321999999999849403869')
+      expect(newClamAmount).to.eq('10100199999999')
+
+      // new treasury have the same amount of total reserves
+      await treasury2.auditReserves()
+
+      expect(await lp2.balanceOf(treasury2.address)).to.eq(
+        '3401173512833305356'
+      )
+      expect(await dai.balanceOf(treasury2.address)).to.eq(
+        '777602999999999000000000'
+      )
+      expect(await treasury2.totalReserves()).to.eq('992712100359780')
     })
   })
 })
