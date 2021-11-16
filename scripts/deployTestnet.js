@@ -1,9 +1,11 @@
 // @dev. This script will deploy this V1.1 of Otter. It will deploy the whole ecosystem.
 
 const { ethers } = require('hardhat')
-const { BigNumber } = ethers
+const { BigNumber, ContractFactory } = ethers
 const UniswapV2ABI = require('./IUniswapV2Factory.json').abi
 const IUniswapV2Pair = require('./IUniswapV2Pair.json').abi
+const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
+const { getQuickSwapAddresses } = require('./addresses')
 
 async function main() {
   const [deployer] = await ethers.getSigners()
@@ -61,10 +63,15 @@ async function main() {
   const warmupPeriod = '3'
 
   const chainId = (await provider.getNetwork()).chainId
-  const uniswapFactoryAddr =
-    chainId === 80001
-      ? '0x69004509291F4a4021fA169FafdCFc2d92aD02Aa'
-      : '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
+
+  const { router: quickswapRouterAddr, factory: quickswapFactoryAddr } =
+    getQuickSwapAddresses(chainId)
+
+  const UniswapV2Router = ContractFactory.fromSolidity(
+    UniswapV2RouterJson,
+    deployer
+  )
+  const quickRouter = UniswapV2Router.attach(quickswapRouterAddr)
 
   const daiAddr =
     chainId === 80001
@@ -82,8 +89,17 @@ async function main() {
   const clam = await CLAM.deploy()
   console.log('CLAM deployed: ' + clam.address)
 
+  const ClamCirculatingSupply = await ethers.getContractFactory(
+    'ClamCirculatingSupply'
+  )
+  const clamCirculatingSupply = await ClamCirculatingSupply.deploy(
+    deployer.address
+  )
+  await clamCirculatingSupply.deployTransaction.wait()
+  await clamCirculatingSupply.initialize(clam.address)
+
   const uniswapFactory = new ethers.Contract(
-    uniswapFactoryAddr,
+    quickswapFactoryAddr,
     UniswapV2ABI,
     deployer
   )
@@ -192,24 +208,22 @@ async function main() {
         MAI_CLAM: daiClamBond.address,
       },
       IDO: ido.address,
+      CLAM_CIRCULATING_SUPPLY: clamCirculatingSupply.address,
     })
   )
 
   // queue and toggle DAI reserve depositor
-  let tx = await treasury.queue('0', daiBond.address)
-  await tx.wait(1)
+  await (await treasury.queue('0', daiBond.address)).wait()
   await treasury.toggle('0', daiBond.address, zeroAddress)
 
-  tx = await treasury.queue('0', deployer.address)
-  await tx.wait(1)
+  await (await treasury.queue('0', deployer.address)).wait()
   await treasury.toggle('0', deployer.address, zeroAddress)
 
   // queue and toggle DAI-CLAM liquidity depositor
   await (await treasury.queue('4', daiClamBond.address)).wait()
   await treasury.toggle('4', daiClamBond.address, zeroAddress)
 
-  tx = await treasury.queue('4', deployer.address)
-  await tx.wait(1)
+  await (await treasury.queue('4', deployer.address)).wait()
   await treasury.toggle('4', deployer.address, zeroAddress)
 
   // Set bond terms
@@ -304,8 +318,10 @@ async function main() {
   await Promise.all([
     (await dai.approve(treasury.address, largeApproval)).wait(),
     (await dai.approve(daiBond.address, largeApproval)).wait(),
+    (await dai.approve(quickRouter.address, largeApproval)).wait(),
     (await clam.approve(staking.address, largeApproval)).wait(),
     (await clam.approve(stakingHelper.address, largeApproval)).wait(),
+    (await clam.approve(quickRouter.address, largeApproval)).wait(),
     (await lp.approve(treasury.address, largeApproval)).wait(),
   ])
 
@@ -319,27 +335,27 @@ async function main() {
 
   await (
     await treasury.deposit(
-      BigNumber.from(daiInTreasury).mul(BigNumber.from(10).pow(18)),
+      ethers.utils.parseEther(String(daiInTreasury)),
       dai.address,
-      BigNumber.from(profit).mul(BigNumber.from(10).pow(9))
+      BigNumber.from(profit).mul(1e9)
     )
   ).wait()
 
   // mint lp
-  tx = await clam.transfer(
-    lpAddress,
-    BigNumber.from(lpClamAmount).mul(BigNumber.from(10).pow(9))
-  )
-  tx1 = await dai.transfer(
-    lpAddress,
-    BigNumber.from(lpClamAmount * initialClamPriceInLP).mul(
-      BigNumber.from(10).pow(18)
+  await (
+    await quickRouter.addLiquidity(
+      dai.address,
+      clam.address,
+      ethers.utils.parseEther(String(lpClamAmount * initialClamPriceInLP)),
+      ethers.utils.parseUnits(String(lpClamAmount), 9),
+      ethers.utils.parseEther(String(lpClamAmount * initialClamPriceInLP)),
+      ethers.utils.parseUnits(String(lpClamAmount), 9),
+      deployer.address,
+      1000000000000
     )
-  )
-  await Promise.all([tx.wait(), tx1.wait()])
-  await (await lp.mint(deployer.address)).wait()
+  ).wait()
 
-  // deposit lp bond with full profit
+  // deposit lp with full profit
   const lpBalance = await lp.balanceOf(deployer.address)
   const valueOfLPToken = await treasury.valueOfToken(lpAddress, lpBalance)
   await treasury.deposit(lpBalance, lpAddress, valueOfLPToken)

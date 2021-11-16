@@ -2,7 +2,7 @@ const { ethers, timeAndMine } = require('hardhat')
 const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
 
-describe.only('Staking', () => {
+describe('Staking', () => {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -328,7 +328,7 @@ describe.only('Staking', () => {
       await expect(() => staking.claim(deployer.address)).to.changeTokenBalance(
         sClam,
         deployer,
-        850 * 1e9
+        '1602250000000'
       )
     })
 

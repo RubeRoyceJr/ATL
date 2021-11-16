@@ -6,7 +6,7 @@ const UniswapV2FactoryJson = require('@uniswap/v2-core/build/UniswapV2Factory.js
 const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Pair.json')
 const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
 
-describe('ClamTokenMigrator', () => {
+describe.only('ClamTokenMigrator', () => {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 
@@ -61,20 +61,11 @@ describe('ClamTokenMigrator', () => {
     const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20')
     sClam = await StakedCLAM.deploy()
 
-    const UniswapV2FactoryContract = ContractFactory.fromSolidity(
-      UniswapV2FactoryJson,
-      deployer
-    )
+    const UniswapV2FactoryContract = ContractFactory.fromSolidity( UniswapV2FactoryJson, deployer)
     quickFactory = await UniswapV2FactoryContract.deploy(deployer.address)
 
-    const UniswapV2Router = ContractFactory.fromSolidity(
-      UniswapV2RouterJson,
-      deployer
-    )
-    quickRouter = await UniswapV2Router.deploy(
-      quickFactory.address,
-      zeroAddress
-    )
+    const UniswapV2Router = ContractFactory.fromSolidity( UniswapV2RouterJson, deployer)
+    quickRouter = await UniswapV2Router.deploy( quickFactory.address, zeroAddress)
 
     await quickFactory.createPair(clam.address, dai.address)
     const pairAddress = await quickFactory.getPair(clam.address, dai.address)
@@ -227,6 +218,7 @@ describe('ClamTokenMigrator', () => {
       const lpBalance = await lp.balanceOf(deployer.address)
       const lpValue = await treasury.valueOfToken(lp.address, lpBalance)
       await treasury.deposit(lpBalance, lp.address, lpValue)
+      const [oldDaiAmountInLP] = await lp.getReserves()
 
       const oldClamAmount = await clam.balanceOf(deployer.address)
 

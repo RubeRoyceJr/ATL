@@ -2,7 +2,7 @@
 
 const { ethers } = require('hardhat')
 const UniswapV2ABI = require('./IUniswapV2Factory.json').abi
-const { getAddresses } = require('./addresses')
+const { getAddresses, getQuickSwapAddresses } = require('./addresses')
 
 async function main() {
   const [deployer] = await ethers.getSigners()
@@ -14,8 +14,8 @@ async function main() {
 
   const { provider } = deployer
   // What epoch will be first epoch
-  const firstEpochNumber = '43'
-  const firstEpochEndTime = 1637107200 // 2021-11-17 00:00 UTC
+  const firstEpochNumber = '49'
+  const firstEpochEndTime = 1637280000 // 2021-11-19 00:00 UTC
   console.log(
     'First epoch timestamp: ' +
       firstEpochEndTime +
@@ -58,32 +58,28 @@ async function main() {
 
   const chainId = (await provider.getNetwork()).chainId
   const oldContractAddresses = getAddresses(chainId)
-  const quickswapFactoryAddr =
-    chainId === 80001
-      ? '0x69004509291F4a4021fA169FafdCFc2d92aD02Aa'
-      : '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32'
-  const quickswapRouterAddr =
-    chainId === 80001
-      ? '0xbdd4e5660839a088573191A9889A262c0Efc0983'
-      : '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff'
+  const { router: quickswapRouterAddr, factory: quickswapFactoryAddr } =
+    getQuickSwapAddresses(chainId)
   const maiAddr = oldContractAddresses.MAI_ADDRESS
 
   // Deploy CLAM v2
   const CLAM2 = await ethers.getContractFactory('OtterClamERC20V2')
+  // const newClam = CLAM2.attach('0xC250e9987A032ACAC293d838726C511E6E1C029d')
   const newClam = await CLAM2.deploy()
   await newClam.deployTransaction.wait()
   console.log('CLAM deployed: ' + newClam.address)
-  verify(newClam.address, [])
 
   const ClamCirculatingSupply = await ethers.getContractFactory(
     'ClamCirculatingSupply'
   )
+  // const clamCirculatingSupply = ClamCirculatingSupply.attach(
+  //   '0x99ee91871cf39A44E3Fc842541274d7eA05AE4b3'
+  // )
   const clamCirculatingSupply = await ClamCirculatingSupply.deploy(
     deployer.address
   )
   await clamCirculatingSupply.deployTransaction.wait()
-  await clamCirculatingSupply.initialize(newClam.address)
-  verify(clamCirculatingSupply.address, [deployer.address])
+  await (await clamCirculatingSupply.initialize(newClam.address)).wait()
 
   const quickswapFactory = new ethers.Contract(
     quickswapFactoryAddr,
@@ -98,14 +94,11 @@ async function main() {
   const BondingCalculator = await ethers.getContractFactory(
     'OtterBondingCalculator'
   )
-  // const bondingCalculator = await BondingCalculator.deploy(newClam.address)
-  const bondingCalculator = BondingCalculator.attach(
-    oldContractAddresses.CLAM_BONDING_CALC_ADDRESS
-  )
+  const bondingCalculator = await BondingCalculator.deploy(newClam.address)
+  await bondingCalculator.deployTransaction.wait()
 
   // Deploy newTreasury
   const Treasury = await ethers.getContractFactory('OtterTreasury')
-  const oldTreasury = Treasury.attach(oldContractAddresses.TREASURY_ADDRESS)
   const newTreasury = await Treasury.deploy(
     newClam.address,
     maiAddr,
@@ -115,13 +108,6 @@ async function main() {
   )
   await newTreasury.deployTransaction.wait()
   console.log('Treasury deployed: ' + newTreasury.address)
-  await verify(newTreasury.address, [
-    newClam.address,
-    maiAddr,
-    lpAddress,
-    bondingCalculator.address,
-    chainId === 80001 ? '0' : '43200', // no time lock for testnet
-  ])
 
   // Deploy staking distributor
   const StakingDistributor = await ethers.getContractFactory(
@@ -138,12 +124,6 @@ async function main() {
   )
   await stakingDistributor.deployTransaction.wait()
   console.log('staking distributor: ' + stakingDistributor.address)
-  await verify(stakingDistributor.address, [
-    newTreasury.address,
-    newClam.address,
-    epochLengthInSeconds,
-    firstEpochEndTime,
-  ])
 
   // Deploy sCLAM
   const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20V2')
@@ -151,7 +131,6 @@ async function main() {
   const sCLAM = await StakedCLAM.deploy()
   await sCLAM.deployTransaction.wait()
   console.log('sCLAMv2: ' + sCLAM.address)
-  await verify(sCLAM.address, [])
 
   // Deploy Staking
   const Staking = await ethers.getContractFactory('OtterStaking')
@@ -167,13 +146,6 @@ async function main() {
   )
   await staking.deployTransaction.wait()
   console.log('staking: ' + staking.address)
-  await verify(staking.address, [
-    newClam.address,
-    sCLAM.address,
-    epochLengthInSeconds,
-    firstEpochNumber,
-    firstEpochEndTime,
-  ])
 
   // Deploy staking warmpup
   const StakingWarmup = await ethers.getContractFactory('OtterStakingWarmup')
@@ -186,7 +158,6 @@ async function main() {
   )
   await stakingWarmup.deployTransaction.wait()
   console.log('staking warmup: ' + staking.address)
-  await verify(stakingWarmup.address, [staking.address, sCLAM.address])
 
   // Deploy staking helper
   const StakingHelper = await ethers.getContractFactory('OtterStakingHelper')
@@ -199,7 +170,6 @@ async function main() {
   )
   await stakingHelper.deployTransaction.wait()
   console.log('staking helper: ' + stakingHelper.address)
-  await verify(stakingHelper.address, [staking.address, newClam.address])
 
   // Deploy MAI bond
   const MAIBond = await ethers.getContractFactory('OtterBondDepository')
@@ -213,13 +183,6 @@ async function main() {
   )
   await maiBond.deployTransaction.wait()
   console.log('mai bond: ' + maiBond.address)
-  await verify(maiBond.address, [
-    newClam.address,
-    maiAddr,
-    newTreasury.address,
-    daoAddr,
-    zeroAddress,
-  ])
 
   const MaiClamBond = await ethers.getContractFactory('OtterBondDepository')
   // const maiClamBond = MaiClamBond.attach(
@@ -234,13 +197,6 @@ async function main() {
   )
   await maiClamBond.deployTransaction.wait()
   console.log('clam/mai bond: ' + maiClamBond.address)
-  await verify(maiClamBond.address, [
-    newClam.address,
-    lpAddress,
-    newTreasury.address,
-    daoAddr,
-    bondingCalculator.address,
-  ])
 
   const Migrator = await ethers.getContractFactory('ClamTokenMigrator')
   const migrator = await Migrator.deploy(
@@ -254,15 +210,6 @@ async function main() {
   )
   await migrator.deployTransaction.wait()
   console.log('migrator: ' + migrator.address)
-  await verify(migrator.address, [
-    oldContractAddresses.CLAM_ADDRESS,
-    oldContractAddresses.TREASURY_ADDRESS,
-    quickswapRouterAddr,
-    quickswapFactoryAddr,
-    newClam.address,
-    newTreasury.address,
-    maiAddr,
-  ])
 
   console.log(
     JSON.stringify({
@@ -299,10 +246,13 @@ async function main() {
   await (await newTreasury.queue('8', stakingDistributor.address)).wait()
   console.log('queue bonds / distributor to new treasury')
 
-  await (await oldTreasury.queue('1', migrator.address)).wait()
-  await (await oldTreasury.queue('3', migrator.address)).wait()
-  await (await oldTreasury.queue('6', migrator.address)).wait()
-  console.log('queue migrator as old treasury manager')
+  const oldTreasury = Treasury.attach(oldContractAddresses.TREASURY_ADDRESS)
+  if (chainId === 80001) {
+    await (await oldTreasury.queue('1', migrator.address)).wait()
+    await (await oldTreasury.queue('3', migrator.address)).wait()
+    await (await oldTreasury.queue('6', migrator.address)).wait()
+    console.log('queue migrator as old treasury manager')
+  }
 
   await (await newTreasury.queue('0', migrator.address)).wait()
   await (await newTreasury.queue('4', migrator.address)).wait()
@@ -353,6 +303,55 @@ async function main() {
     await (await newTreasury.toggle('8', migrator.address, zeroAddress)).wait()
     console.log('toggle migrator as new treasury depositor')
   }
+
+  await verify(newClam.address, [])
+  await verify(sCLAM.address, [])
+  await verify(clamCirculatingSupply.address, [deployer.address])
+  await verify(newTreasury.address, [
+    newClam.address,
+    maiAddr,
+    lpAddress,
+    bondingCalculator.address,
+    chainId === 80001 ? '0' : '43200', // no time lock for testnet
+  ])
+  await verify(stakingDistributor.address, [
+    newTreasury.address,
+    newClam.address,
+    epochLengthInSeconds,
+    firstEpochEndTime,
+  ])
+  await verify(staking.address, [
+    newClam.address,
+    sCLAM.address,
+    epochLengthInSeconds,
+    firstEpochNumber,
+    firstEpochEndTime,
+  ])
+  await verify(stakingWarmup.address, [staking.address, sCLAM.address])
+  await verify(stakingHelper.address, [staking.address, newClam.address])
+  await verify(maiBond.address, [
+    newClam.address,
+    maiAddr,
+    newTreasury.address,
+    daoAddr,
+    zeroAddress,
+  ])
+  await verify(maiClamBond.address, [
+    newClam.address,
+    lpAddress,
+    newTreasury.address,
+    daoAddr,
+    bondingCalculator.address,
+  ])
+  await verify(migrator.address, [
+    oldContractAddresses.CLAM_ADDRESS,
+    oldContractAddresses.TREASURY_ADDRESS,
+    quickswapRouterAddr,
+    quickswapFactoryAddr,
+    newClam.address,
+    newTreasury.address,
+    maiAddr,
+  ])
 
   // Set bond terms
   // await (await maiBond.initializeBondTerms(

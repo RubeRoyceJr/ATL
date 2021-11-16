@@ -169,14 +169,15 @@ contract ClamTokenMigrator is Ownable {
         );
 
         // Move mai reserve to new treasury
-        uint256 maiBalance = mai.balanceOf(address(oldTreasury));
-        uint256 excessReserves = maiBalance.sub(oldCLAM.totalSupply() * 1e9);
+        uint256 excessReserves = oldTreasury.excessReserves().mul(1e9);
+        oldTreasury.manage(address(mai), excessReserves);
+
         uint256 valueOfMai = oldTreasury.valueOfToken(
             address(mai),
             excessReserves
         );
-        oldTreasury.manage(address(mai), excessReserves);
 
+        // Mint new CLAM to migrator for migration
         mai.safeApprove(address(newTreasury), excessReserves);
         uint256 newCLAMMinted = newCLAMTotalSupply.sub(newCLAMAmountInLP).sub(1);
         uint256 profit = valueOfMai.sub(newCLAMMinted);
@@ -190,7 +191,7 @@ contract ClamTokenMigrator is Ownable {
         address recipient
     ) external onlyOwner {
         require(tokenAddress != address(0), 'Token address cannot be 0x0');
-        require(tokenAddress != address(oldCLAM), 'Cannot withdraw: old-OHM');
+        require(tokenAddress != address(oldCLAM), 'Cannot withdraw: old-CLAM');
         require(amount > 0, 'Withdraw value must be greater than 0');
         if (recipient == address(0)) {
             recipient = msg.sender; // if no address is specified the value will will be withdrawn to Owner

@@ -25,7 +25,10 @@ module.exports = {
             runs: 200,
           },
         },
-      }
+      },
+      {
+        version: '0.5.16',
+      },
     ],
   },
   networks: {
@@ -43,6 +46,10 @@ module.exports = {
     },
     hardhat: {
       gas: 'auto',
+      chainId: 137,
+      forking: {
+        url: 'https://polygon-rpc.com',
+      },
     },
   },
   etherscan: {
