@@ -99,9 +99,8 @@ contract ClamTokenMigrator is Ownable {
 
         uint256 maiAmount = oldCLAMAmount.mul(1e9);
         uint256 newCLAMAmountInLP = oldCLAMAmount.div(convertRatio);
-        // uint256 profit = oldCLAMAmount - newCLAMAmountInLP;
 
-        oldCLAM.safeApprove(address(oldTreasury), maiAmount);
+        oldCLAM.safeApprove(address(oldTreasury), oldCLAMAmount);
         oldTreasury.withdraw(maiAmount, address(mai));
 
         mai.safeApprove(address(newTreasury), maiAmount);

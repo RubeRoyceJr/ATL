@@ -61,11 +61,20 @@ describe.only('ClamTokenMigrator', () => {
     const StakedCLAM = await ethers.getContractFactory('StakedOtterClamERC20')
     sClam = await StakedCLAM.deploy()
 
-    const UniswapV2FactoryContract = ContractFactory.fromSolidity( UniswapV2FactoryJson, deployer)
+    const UniswapV2FactoryContract = ContractFactory.fromSolidity(
+      UniswapV2FactoryJson,
+      deployer
+    )
     quickFactory = await UniswapV2FactoryContract.deploy(deployer.address)
 
-    const UniswapV2Router = ContractFactory.fromSolidity( UniswapV2RouterJson, deployer)
-    quickRouter = await UniswapV2Router.deploy( quickFactory.address, zeroAddress)
+    const UniswapV2Router = ContractFactory.fromSolidity(
+      UniswapV2RouterJson,
+      deployer
+    )
+    quickRouter = await UniswapV2Router.deploy(
+      quickFactory.address,
+      zeroAddress
+    )
 
     await quickFactory.createPair(clam.address, dai.address)
     const pairAddress = await quickFactory.getPair(clam.address, dai.address)
@@ -181,6 +190,7 @@ describe.only('ClamTokenMigrator', () => {
     await clam.approve(migrator.address, largeApproval)
     await dai.approve(quickRouter.address, largeApproval)
     await clam.approve(quickRouter.address, largeApproval)
+    await clam.connect(depositor).approve(migrator.address, largeApproval)
 
     await dai.mint(
       deployer.address,
@@ -218,7 +228,6 @@ describe.only('ClamTokenMigrator', () => {
       const lpBalance = await lp.balanceOf(deployer.address)
       const lpValue = await treasury.valueOfToken(lp.address, lpBalance)
       await treasury.deposit(lpBalance, lp.address, lpValue)
-      const [oldDaiAmountInLP] = await lp.getReserves()
 
       const oldClamAmount = await clam.balanceOf(deployer.address)
 
@@ -233,17 +242,25 @@ describe.only('ClamTokenMigrator', () => {
 
       // just left enough mai for total supply of old clam
       expect(await dai.balanceOf(treasury.address)).to.eq(
-        (await clam.totalSupply()).mul(1e9)
+        '340651633616274806525292'
       )
       expect(await clam2.totalSupply()).to.eq(oldTotalSupply.div(5).sub(1))
 
+      // transfer clam to another user
+      await clam.transfer(depositor.address, ethers.utils.parseUnits('100', 9))
+
       // migrate personal
       await migrator.migrate()
+      await migrator.connect(depositor).migrate()
 
       expect(await clam2.balanceOf(deployer.address)).to.eq(
-        oldClamAmount.div(5)
+        oldClamAmount.sub(ethers.utils.parseUnits('100', 9)).div(5)
+      )
+      expect(await clam2.balanceOf(depositor.address)).to.eq(
+        ethers.utils.parseUnits('20', 9)
       )
       expect(await clam.balanceOf(deployer.address)).to.eq('0')
+      expect(await clam.balanceOf(depositor.address)).to.eq('0')
 
       // migrator should not have any token left
       expect(await lp.balanceOf(migrator.address)).to.eq('0')
@@ -255,7 +272,7 @@ describe.only('ClamTokenMigrator', () => {
       expect(await clam.totalSupply()).to.eq('1')
 
       // old treasury reserve should < 1
-      expect(await dai.balanceOf(treasury.address)).to.eq('1000000000')
+      expect(await dai.balanceOf(treasury.address)).to.eq('1806525292')
       expect(await lp.balanceOf(treasury.address)).to.eq('0')
 
       // new LP open in x5 price
@@ -270,7 +287,7 @@ describe.only('ClamTokenMigrator', () => {
         '3533451312169791387'
       )
       expect(await dai.balanceOf(treasury2.address)).to.eq(
-        '905126540522623806525292'
+        '905126540522623000000000'
       )
       expect(await treasury2.totalReserves()).to.eq('1128601623477964')
     })
