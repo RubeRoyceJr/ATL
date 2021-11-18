@@ -11,7 +11,7 @@ const address = {
   STAKING_ADDRESS: '0xC8B0243F350AA5F8B979b228fAe522DAFC61221a',
   OLD_STAKING_ADDRESS: '0xcF2A11937A906e09EbCb8B638309Ae8612850dBf',
   STAKING_HELPER_ADDRESS: '0x76B38319483b570B4BCFeD2D35d191d3c9E01691',
-  MIGRATOR: '0x4dF64BBe830168Ed257D0a1FA52900E038a37c4c',
+  MIGRATOR: '0xDaa1f5036eC158fca9E5ce791ab3e213cD1c41df',
   RESERVES: {
     MAI: '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1',
     OLD_MAI_CLAM: '0x8094f4C9a4C8AD1FF4c6688d07Bd90f996C7CA21',
@@ -27,7 +27,7 @@ const address = {
 }
 
 const stakingDistributor = '0x0Dd015889df6F50d39e9D7A52711D0B86E43FC62'
-const stakingWarmup = '0xC8B0243F350AA5F8B979b228fAe522DAFC61221a'
+const stakingWarmup = '0x8b2943667957ec2ce851fd449b7a870f253ca1e7'
 const daoAddr = '0x929A27c46041196e1a49C7B459d63eC9A20cd879'
 const firstEpochNumber = '49'
 const firstEpochEndTime = 1637280000 // 2021-11-19 00:00 UTC
@@ -36,6 +36,7 @@ const epochLengthInSeconds = 86400 / 3
 
 async function main() {
   const deployer = await ethers.getSigner()
+  await verify(address.CLAM_BONDING_CALC_ADDRESS,[address.CLAM_ADDRESS])
   // await verify(newClam.address, [])
   // await verify(address.sCLAM_ADDRESS, [])
   // await verify(address.CLAM_CIRCULATING_SUPPLY, [deployer.address])
@@ -59,7 +60,7 @@ async function main() {
   //   firstEpochNumber,
   //   firstEpochEndTime,
   // ])
-  // await verify(stakingWarmup, [address.STAKING_ADDRESS, address.sCLAM_ADDRESS])
+  await verify(stakingWarmup, [address.STAKING_ADDRESS, address.sCLAM_ADDRESS])
   // await verify(address.STAKING_HELPER_ADDRESS, [
   //   address.STAKING_ADDRESS,
   //   address.CLAM_ADDRESS,
@@ -71,22 +72,22 @@ async function main() {
   //   daoAddr,
   //   zeroAddress,
   // ])
-  await verify(address.BONDS.MAI_CLAM, [
-    address.CLAM_ADDRESS,
-    address.RESERVES.MAI_CLAM,
-    address.TREASURY_ADDRESS,
-    daoAddr,
-    address.CLAM_BONDING_CALC_ADDRESS,
-  ])
-  await verify(address.MIGRATOR, [
-    '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465',
-    '0xab328Ca61599974b0f577d1F8AB0129f2842d765',
-    '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff',
-    '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32',
-    address.CLAM_ADDRESS,
-    address.TREASURY_ADDRESS,
-    address.MAI_ADDRESS,
-  ])
+  // await verify(address.BONDS.MAI_CLAM, [
+  //   address.CLAM_ADDRESS,
+  //   address.RESERVES.MAI_CLAM,
+  //   address.TREASURY_ADDRESS,
+  //   daoAddr,
+  //   address.CLAM_BONDING_CALC_ADDRESS,
+  // ])
+  // await verify(address.MIGRATOR, [
+  //   '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465',
+  //   '0xab328Ca61599974b0f577d1F8AB0129f2842d765',
+  //   '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff',
+  //   '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32',
+  //   address.CLAM_ADDRESS,
+  //   address.TREASURY_ADDRESS,
+  //   address.MAI_ADDRESS,
+  // ])
 }
 
 async function verify(address, constructorArguments) {

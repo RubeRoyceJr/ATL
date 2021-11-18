@@ -48,7 +48,9 @@ module.exports = {
       gas: 'auto',
       chainId: 137,
       forking: {
-        url: 'https://polygon-rpc.com',
+        url: 'https://polygon-mainnet.infura.io/v3/d7dae60b5e1d40b9b31767b0086aa75d',
+        blockNumber: 21509084,
+        // url: 'https://polygon-rpc.com',
       },
     },
   },
