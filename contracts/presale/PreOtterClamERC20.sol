@@ -19,7 +19,7 @@ contract PreOtterClamERC20 is Divine {
 
   mapping( address => bool ) public isApprovedSeller;
 
-  constructor() Divine( "Pre Clam", "pCLAM", 18 ) {
+  constructor() Divine( "Pre Clam", "pCLAM2", 18 ) {
     uint256 initialSupply_ = 1000000000 * 1e18;
     requireSellerApproval = true;
     allowMinting = true;

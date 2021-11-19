@@ -2,83 +2,54 @@
 
 const { BigNumber } = require('@ethersproject/bignumber')
 const { ethers } = require('hardhat')
-
 const POLYGON_MAINNET = {
-  sCLAM_ADDRESS: '0x3949F058238563803b5971711Ad19551930C8209',
-  CLAM_ADDRESS: '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465',
+  sCLAM_ADDRESS: '0xAAc144Dc08cE39Ed92182dd85ded60E5000C9e67',
+  CLAM_ADDRESS: '0xC250e9987A032ACAC293d838726C511E6E1C029d',
+  OLD_CLAM_ADDRESS: '0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465',
+  OLD_SCLAM_ADDRESS: '0x3949F058238563803b5971711Ad19551930C8209',
   MAI_ADDRESS: '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1',
-  TREASURY_ADDRESS: '0xab328Ca61599974b0f577d1F8AB0129f2842d765',
-  CLAM_BONDING_CALC_ADDRESS: '0x47655e27667E5B4EC9EB70799f281524d031381c',
-  STAKING_ADDRESS: '0xcF2A11937A906e09EbCb8B638309Ae8612850dBf',
-  STAKING_HELPER_ADDRESS: '0xe7bcBE1fB4F0EAe667feB64b007176Ac790675f2',
+  TREASURY_ADDRESS: '0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C',
+  OLD_TREASURY: '0xab328Ca61599974b0f577d1F8AB0129f2842d765',
+  CLAM_BONDING_CALC_ADDRESS: '0x651125e097D7e691f3Df5F9e5224f0181E3A4a0E',
+  STAKING_ADDRESS: '0xC8B0243F350AA5F8B979b228fAe522DAFC61221a',
+  OLD_STAKING_ADDRESS: '0xcF2A11937A906e09EbCb8B638309Ae8612850dBf',
+  STAKING_HELPER_ADDRESS: '0x76B38319483b570B4BCFeD2D35d191d3c9E01691',
+  MIGRATOR: '0xDaa1f5036eC158fca9E5ce791ab3e213cD1c41df',
   RESERVES: {
     MAI: '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1',
-    MAI_CLAM: '0x8094f4C9a4C8AD1FF4c6688d07Bd90f996C7CA21',
+    OLD_MAI_CLAM: '0x8094f4C9a4C8AD1FF4c6688d07Bd90f996C7CA21',
+    MAI_CLAM: '0x1581802317f32A2665005109444233ca6E3e2D68',
   },
   BONDS: {
-    MAI: '0x28077992bFA9609Ae27458A766470b03D43dEe8A',
-    MAI_CLAM: '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d',
+    MAI: '0x603A74Fd527b85E0A1e205517c1f24aC71f5C263',
+    MAI_CLAM: '0x706587BD39322A6a78ddD5491cDbb783F8FD983E',
+    OLD_MAI: '0x28077992bFA9609Ae27458A766470b03D43dEe8A',
+    OLD_MAI_CLAM: '0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d',
+    OLD_MAI_CLAM_V2: '0x603A74Fd527b85E0A1e205517c1f24aC71f5C263',
   },
-  IDO: '0xa5e71701699152de933bc57e89EeCD3e446458Ee',
+  CLAM_CIRCULATING_SUPPLY: '0x99ee91871cf39A44E3Fc842541274d7eA05AE4b3',
+  IDO: '0x7f637ea843405dff10592f894292a8f1188166f9',
 }
 
-const POLYGON_MUMBAI = {
-  sCLAM_ADDRESS: '0xb8eaA6Bd059489504929A40760C0e24a27396B19',
-  CLAM_ADDRESS: '0xB03D1C816dA5b5eac742B0e4E8C25063726252Cc',
-  MAI_ADDRESS: '0x19907af68A173080c3e05bb53932B0ED541f6d20',
-  TREASURY_ADDRESS: '0x5C68dC5623765Bbf21dCFf86c90644917e429eCD',
-  CLAM_BONDING_CALC_ADDRESS: '0x2827bDC83582065940DBa57C469a6Ac2d49Be21C',
-  STAKING_ADDRESS: '0xC40818207157a33124120284BF9628C14B151900',
-  STAKING_HELPER_ADDRESS: '0x5E9247e51632Adc9b292cae46EA760a4Ff6BB0d6',
-  RESERVES: {
-    MAI: '0x19907af68A173080c3e05bb53932B0ED541f6d20',
-    MAI_CLAM: '0xCf580A3E5A1041E8d46a9D0F88ca17d6360aaC9a',
-  },
-  BONDS: {
-    MAI: '0xD10065210320B7f1ec4b287755196bD5Fa8b6916',
-    MAI_CLAM: '0xf61e6c40c18B66851767Be7774a42123E8149F1D',
-  },
-  IDO: '0x034E51B2bC52A178c83c703Ad3Db97C71d9B3335',
-}
+const daoAddr = '0x929A27c46041196e1a49C7B459d63eC9A20cd879'
 
 async function main() {
   const [deployer] = await ethers.getSigners()
 
-  const addresses =
-    deployer.provider.chainId === 80001 ? POLYGON_MUMBAI : POLYGON_MAINNET
+  const addresses = POLYGON_MAINNET
 
-  const daoAddr = '0x929A27c46041196e1a49C7B459d63eC9A20cd879'
   console.log('Deploying contracts with the account: ' + deployer.address)
 
-  const ClamCirculatingSupply = await ethers.getContractFactory( 'ClamCirculatingSupply')
-  // const clamCirculatingSupply = await ClamCirculatingSupply.deploy(
-  //   deployer.address
-  // )
-  const clamCirculatingSupply = ClamCirculatingSupply.attach(
-    '0x44E02675b5ED5b5dF43C04c38F550605949B68c4'
-  )
-  // await clamCirculatingSupply.deployTransaction.wait()
-  // await clamCirculatingSupply.initialize(addresses.CLAM_ADDRESS)
-  console.log(
-    'clamCirculatingSupply deployed at: ' + clamCirculatingSupply.address
-  )
-  // await (
-  //   await clamCirculatingSupply.setNonCirculatingCLAMAddresses([daoAddr])
-  // ).wait()
-
   const PreOtterClamERC20 = await ethers.getContractFactory('PreOtterClamERC20')
-  // const pClam = await PreOtterClamERC20.deploy()
-  const pClam = PreOtterClamERC20.attach(
-    '0xBee8DDFC4698478dD774c724275785b4B5156092'
-  )
-  // await pClam.deployTransaction.wait()
+  const pClam = await PreOtterClamERC20.deploy()
+  await pClam.deployTransaction.wait()
   console.log('pCLAM deployed at: ' + pClam.address)
-  // await (
-  //   await pClam.transfer(
-  //     daoAddr,
-  //     BigNumber.from(700000000).mul(BigNumber.from(10).pow(18))
-  //   )
-  // ).wait()
+  await (
+    await pClam.transfer(
+      daoAddr,
+      BigNumber.from(700000000).mul(BigNumber.from(10).pow(18))
+    )
+  ).wait()
 
   const ExercisePreClam = await ethers.getContractFactory('ExercisePreClam')
   const exercisePreClam = await ExercisePreClam.deploy(
@@ -86,10 +57,18 @@ async function main() {
     addresses.CLAM_ADDRESS,
     addresses.MAI_ADDRESS,
     addresses.TREASURY_ADDRESS,
-    clamCirculatingSupply.address
+    addresses.CLAM_CIRCULATING_SUPPLY
   )
   await exercisePreClam.deployTransaction.wait()
   console.log('exercisePreClam deployed at: ' + exercisePreClam.address)
+
+  await (
+    await exercisePreClam.setTerms(
+      deployer.address,
+      '300000000000000000000000000',
+      '50000'
+    )
+  ).wait()
 
   const Treasury = await ethers.getContractFactory('OtterTreasury')
   const treasury = Treasury.attach(addresses.TREASURY_ADDRESS)

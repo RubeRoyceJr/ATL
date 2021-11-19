@@ -36,8 +36,6 @@ contract ExercisePreClam is Ownable {
 
     mapping( address => address ) public walletChange;
 
-    bool hasMigrated;
-
     constructor( address _pCLAM, address _clam, address _dai, address _treasury, address _circulatingCLAMContract ) {
         require( _pCLAM != address(0) );
         pCLAM = _pCLAM;
