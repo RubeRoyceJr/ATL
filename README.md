@@ -22,14 +22,13 @@ Local Setup Steps:
 
 |Contract       | Addresss                                                                                                            | Notes   |
 |:-------------:|:-------------------------------------------------------------------------------------------------------------------:|-------|
-|CLAM            |[0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465](https://polygonscan.com/address/0x4d6A30EFBE2e9D7A9C143Fce1C5Bb30d9312A465)| Main Token Contract|
-|sCLAM           |[0x3949F058238563803b5971711Ad19551930C8209](https://polygonscan.com/address/0x3949F058238563803b5971711Ad19551930C8209)| Staked Clam|
-|Treasury       |[0xab328Ca61599974b0f577d1F8AB0129f2842d765](https://polygonscan.com/address/0xab328Ca61599974b0f577d1F8AB0129f2842d765)| OtterClam Treasury holds all the assets        |
-|Staking |[0xcF2A11937A906e09EbCb8B638309Ae8612850dBf](https://polygonscan.com/address/0xcF2A11937A906e09EbCb8B638309Ae8612850dBf/)| Main Staking contract responsible for calling rebases every 28800 seconds|
-|StakingHelper  |[0xe7bcBE1fB4F0EAe667feB64b007176Ac790675f2](https://polygonscan.com/address/0xe7bcBE1fB4F0EAe667feB64b007176Ac790675f2)| Helper Contract to Stake with 0 warmup |
-|StakingHelper V2 |[0x22f587ecf472670c61aa4715d0b76d2fa40a9798](https://polygonscan.com/address/0x22f587ecf472670c61aa4715d0b76d2fa40a9798)| Helper Contract to Stake with 0 warmup |
+|CLAM            |[0xC250e9987A032ACAC293d838726C511E6E1C029d](https://polygonscan.com/address/0xC250e9987A032ACAC293d838726C511E6E1C029d)| Main Token Contract|
+|sCLAM           |[0xAAc144Dc08cE39Ed92182dd85ded60E5000C9e67](https://polygonscan.com/address/0xAAc144Dc08cE39Ed92182dd85ded60E5000C9e67)| Staked Clam|
+|Treasury       |[0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C](https://polygonscan.com/address/0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C)| OtterClam Treasury holds all the assets        |
+|Staking |[0xC8B0243F350AA5F8B979b228fAe522DAFC61221a](https://polygonscan.com/address/0xC8B0243F350AA5F8B979b228fAe522DAFC61221a/)| Main Staking contract responsible for calling rebases every 28800 seconds|
+|StakingHelper  |[0x76B38319483b570B4BCFeD2D35d191d3c9E01691](https://polygonscan.com/address/0x76B38319483b570B4BCFeD2D35d191d3c9E01691)| Helper Contract to Stake with 0 warmup |
 |DAO            |[0x929A27c46041196e1a49C7B459d63eC9A20cd879](https://polygonscan.com/address/0x929A27c46041196e1a49C7B459d63eC9A20cd879)|Storage Wallet for DAO under MS |
-|Staking Warm Up|[0x314de54E2B64E36F4B0c75079C7FB7f894750014](https://polygonscan.com/address/0x314de54E2B64E36F4B0c75079C7FB7f894750014)| Instructs the Staking contract when a user can claim sCLAM |
+|Staking Warm Up|[0x8b2943667957ec2ce851fd449b7a870f253ca1e7](https://polygonscan.com/address/0x8b2943667957ec2ce851fd449b7a870f253ca1e7)| Instructs the Staking contract when a user can claim sCLAM |
 
 
 **Bonds**
@@ -38,9 +37,9 @@ All LP bonds use the Bonding Calculator contract which is used to compute RFV.
 
 |Contract       | Addresss                                                                                                            | Notes   |
 |:-------------:|:-------------------------------------------------------------------------------------------------------------------:|-------|
-|Bond Calculator|[0x47655e27667E5B4EC9EB70799f281524d031381c](https://polygonscan.com/address/0x47655e27667E5B4EC9EB70799f281524d031381c)| |
-|MAI bond|[0x28077992bFA9609Ae27458A766470b03D43dEe8A](https://polygonscan.com/address/0x28077992bFA9609Ae27458A766470b03D43dEe8A)| Main bond managing serve mechanics for CLAM/MAI|
-|MAI/CLAM LP Bond|[0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d](https://polygonscan.com/address/0x79B47c03B02019Af78Ee0de9B0b3Ac0786338a0d)| Manages mechhanism for thhe protocol to buy back its own liquidity from the pair. |
+|Bond Calculator|[0x651125e097D7e691f3Df5F9e5224f0181E3A4a0E](https://polygonscan.com/address/0x651125e097D7e691f3Df5F9e5224f0181E3A4a0E)| |
+|MAI bond|[0x603A74Fd527b85E0A1e205517c1f24aC71f5C263](https://polygonscan.com/address/0x603A74Fd527b85E0A1e205517c1f24aC71f5C263)| Main bond managing serve mechanics for CLAM/MAI|
+|MAI/CLAM LP Bond|[0x706587BD39322A6a78ddD5491cDbb783F8FD983E](https://polygonscan.com/address/0x706587BD39322A6a78ddD5491cDbb783F8FD983E)| Manages mechhanism for thhe protocol to buy back its own liquidity from the pair. |
 
 
 ## Allocator Guide
@@ -49,7 +48,7 @@ The following is a guide for interacting with the treasury as a reserve allocato
 
 A reserve allocator is a contract that deploys funds into external strategies, such as Aave, Curve, etc.
 
-Treasury Address: `0xab328Ca61599974b0f577d1F8AB0129f2842d765`
+Treasury Address: `0x8ce47D56EAa1299d3e06FF3E04637449fFb01C9C`
 
 **Managing**:
 The first step is withdraw funds from the treasury via the "manage" function. "Manage" allows an approved address to withdraw excess reserves from the treasury.
