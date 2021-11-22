@@ -1,26 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-import './interfaces/IOtterStaking.sol';
+import "./interfaces/IOtterStaking.sol";
+import "./interfaces/IsCLAM.sol";
+
+import "./types/ERC20.sol";
+import "./types/Ownable.sol";
 
 import "./libraries/SafeMath.sol";
-import "./libraries/ERC20.sol";
-import "./libraries/Ownable.sol";
-
-
-interface IsCLAM {
-    function rebase( uint256 clamProfit_, uint epoch_) external returns (uint256);
-
-    function circulatingSupply() external view returns (uint256);
-
-    function balanceOf(address who) external view returns (uint256);
-
-    function gonsForBalance( uint amount ) external view returns ( uint );
-
-    function balanceForGons( uint gons ) external view returns ( uint );
-
-    function index() external view returns ( uint );
-}
+import "./libraries/SafeERC20.sol";
 
 interface IWarmup {
     function retrieve( address staker_, uint amount_ ) external;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
+import './interfaces/IOtterBondingCalculator.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IUniswapV2Pair.sol';
 
@@ -11,11 +12,7 @@ import './libraries/BitMath.sol';
 import './libraries/FixedPoint.sol';
 
 
-interface IBondingCalculator {
-  function valuation( address pair_, uint amount_ ) external view returns ( uint _value );
-}
-
-contract OtterBondingCalculator is IBondingCalculator {
+contract OtterBondingCalculator is IOtterBondingCalculator {
 
     using FixedPoint for *;
     using SafeMath for uint;
@@ -48,7 +45,7 @@ contract OtterBondingCalculator is IBondingCalculator {
         _value = totalValue.mul( FixedPoint.fraction( amount_, totalSupply ).decode112with18() ).div( 1e18 );
     }
 
-    function markdown( address _pair ) external view returns ( uint ) {
+    function markdown( address _pair ) external view override returns ( uint ) {
         ( uint reserve0, uint reserve1, ) = IUniswapV2Pair( _pair ).getReserves();
 
         uint reserve;

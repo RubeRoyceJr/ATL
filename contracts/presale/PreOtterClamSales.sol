@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
+
+import "../types/Ownable.sol";
+import "../types/ERC20.sol";
+
 import "../libraries/SafeMath.sol";
-import "../libraries/Ownable.sol";
-import "../libraries/ERC20.sol";
+import "../libraries/SafeERC20.sol";
 
 
 contract PreOtterClamSales is Ownable {

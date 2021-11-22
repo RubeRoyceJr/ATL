@@ -2,8 +2,8 @@
 pragma solidity 0.7.5;
 
 import "../libraries/SafeMath.sol";
-import "../libraries/ERC20.sol";
-import "../libraries/Ownable.sol";
+import "../types/ERC20.sol";
+import "../types/Ownable.sol";
 
 
 abstract contract Divine is ERC20, Ownable {

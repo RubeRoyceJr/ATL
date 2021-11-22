@@ -32,7 +32,7 @@ module.exports = {
   },
   networks: {
     'polygon-mainnet': {
-      url: polygonMainnetRPC,
+      url: 'https://polygon-rpc.com',
       accounts: [deployer],
       gasPrice: 35000000000,
     },

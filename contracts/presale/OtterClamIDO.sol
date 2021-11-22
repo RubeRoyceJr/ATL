@@ -4,10 +4,12 @@ pragma solidity 0.7.5;
 import '../interfaces/IERC20.sol';
 import '../interfaces/IUniswapV2Pair.sol';
 
-import '../libraries/Ownable.sol';
+import '../types/Ownable.sol';
+import '../types/ERC20.sol';
+
 import '../libraries/SafeMath.sol';
-import '../libraries/ERC20.sol';
 import '../libraries/Math.sol';
+import "../libraries/SafeERC20.sol";
 
 interface ITreasury {
     function deposit(

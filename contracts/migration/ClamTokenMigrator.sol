@@ -6,9 +6,11 @@ import 'hardhat/console.sol';
 import '../interfaces/IERC20.sol';
 import '../interfaces/IOtterTreasury.sol';
 
-import '../libraries/Ownable.sol';
+import '../types/Ownable.sol';
+import '../types/ERC20.sol';
+
 import '../libraries/SafeMath.sol';
-import '../libraries/ERC20.sol';
+import '../libraries/SafeERC20.sol';
 
 interface IUniswapV2Router {
     function addLiquidity(

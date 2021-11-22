@@ -3,9 +3,11 @@ pragma solidity 0.7.5;
 
 import "./interfaces/IOtterTreasury.sol";
 
-import "./libraries/Ownable.sol";
+import "./types/Ownable.sol";
+import "./types/ERC20.sol";
+
 import "./libraries/SafeMath.sol";
-import "./libraries/ERC20.sol";
+import "./libraries/SafeERC20.sol";
 
 interface ICLAMERC20 {
     function burnFrom(address account_, uint256 amount_) external;

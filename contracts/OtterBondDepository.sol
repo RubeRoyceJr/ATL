@@ -3,17 +3,14 @@ pragma solidity 0.7.5;
 
 import "./interfaces/IOtterTreasury.sol";
 import "./interfaces/IOtterStaking.sol";
+import "./interfaces/IOtterBondingCalculator.sol";
 
-import "./libraries/Ownable.sol";
+import "./types/Ownable.sol";
+
 import "./libraries/SafeMath.sol";
 import "./libraries/Math.sol";
 import "./libraries/FixedPoint.sol";
-import "./libraries/ERC20.sol";
-
-interface IBondCalculator {
-    function valuation( address _LP, uint _amount ) external view returns ( uint );
-    function markdown( address _LP ) external view returns ( uint );
-}
+import "./libraries/SafeERC20.sol";
 
 interface IStakingHelper {
     function stake( uint _amount, address _recipient ) external;
@@ -409,7 +406,7 @@ contract OtterBondDepository is Ownable {
      */
     function bondPriceInUSD() public view returns ( uint price_ ) {
         if( isLiquidityBond ) {
-            price_ = bondPrice().mul( IBondCalculator( bondCalculator ).markdown( principle ) ).div( 100 );
+            price_ = bondPrice().mul( IOtterBondingCalculator( bondCalculator ).markdown( principle ) ).div( 100 );
         } else {
             price_ = bondPrice().mul( 10 ** IERC20( principle ).decimals() ).div( 100 );
         }
@@ -434,7 +431,7 @@ contract OtterBondDepository is Ownable {
      */
     function standardizedDebtRatio() external view returns ( uint ) {
         if ( isLiquidityBond ) {
-            return debtRatio().mul( IBondCalculator( bondCalculator ).markdown( principle ) ).div( 1e9 );
+            return debtRatio().mul( IOtterBondingCalculator( bondCalculator ).markdown( principle ) ).div( 1e9 );
         } else {
             return debtRatio();
         }

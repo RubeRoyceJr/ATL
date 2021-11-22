@@ -4,8 +4,10 @@ pragma solidity 0.7.5;
 
 import "./interfaces/IOtterTreasury.sol";
 
-import "./libraries/ERC20.sol";
-import "./libraries/Ownable.sol";
+import "./types/ERC20.sol";
+import "./types/Ownable.sol";
+
+import "./libraries/SafeERC20.sol";
 
 
 contract OtterStakingDistributor is Ownable {
