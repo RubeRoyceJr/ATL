@@ -6,10 +6,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "npx hardhat test",
+    "test": "NODE_ENV=test npx hardhat test",
     "compile": "npx hardhat compile",
     "clean": "npx hardhat clean",
-    "start": "npx hardhat run scripts/deployAll.js",
     "lint:sol": "solhint -f table contracts/**/*.sol",
     "bonds:monitor": "npx hardhat run ./scripts/monitorBonds.js --network polygon-mainnet",
     "bonds:adjust": "npx hardhat run ./scripts/adjustBonds.js --network polygon-mainnet"

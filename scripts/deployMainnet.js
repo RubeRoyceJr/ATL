@@ -10,6 +10,7 @@ async function main() {
 
   // Initial staking index
   const initialIndex = '1000000000'
+  const initialIndex = '1400675709'
 
   const { provider } = deployer
   const firstEpochTime = 1635897600 // 2021-11-3 00:00 UTC

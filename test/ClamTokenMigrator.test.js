@@ -1,4 +1,4 @@
-const { ethers, timeAndMine } = require('hardhat')
+const { ethers } = require('hardhat')
 const { ContractFactory } = require('ethers')
 const { expect } = require('chai')
 const { toClamAmount } = require('./helper')
@@ -6,7 +6,7 @@ const UniswapV2FactoryJson = require('@uniswap/v2-core/build/UniswapV2Factory.js
 const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Pair.json')
 const UniswapV2RouterJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
 
-describe.only('ClamTokenMigrator', () => {
+describe.skip('ClamTokenMigrator', () => {
   // Large number for approval for DAI
   const largeApproval = '100000000000000000000000000000000'
 

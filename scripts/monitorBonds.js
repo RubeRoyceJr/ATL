@@ -1,7 +1,7 @@
 const { ethers } = require('hardhat')
 const IUniswapV2Pair = require('./IUniswapV2Pair.json').abi
 
-const CLAM_MAI_LP = '0x8094f4C9a4C8AD1FF4c6688d07Bd90f996C7CA21'
+const CLAM_MAI_LP = '0x1581802317f32A2665005109444233ca6E3e2D68'
 const priceFormatter = Intl.NumberFormat('en', {
   style: 'currency',
   currency: 'usd',
@@ -12,8 +12,8 @@ async function main() {
     'OtterBondDepository'
   )
   const bonds = [
-    { name: 'MAI', address: '0x28077992bFA9609Ae27458A766470b03D43dEe8A' },
-    { name: 'CLAM-MAI', address: '0x64c766f9A4936c3a4b51C55Ea5C4854E19766035' },
+    { name: 'MAI', address: '0x603A74Fd527b85E0A1e205517c1f24aC71f5C263' },
+    { name: 'CLAM-MAI', address: '0x706587BD39322A6a78ddD5491cDbb783F8FD983E' },
   ]
 
   for (const { name, address } of bonds) {
@@ -89,7 +89,7 @@ async function getMarketPrice() {
   const signer = await ethers.getSigner()
   const lp = new ethers.Contract(CLAM_MAI_LP, IUniswapV2Pair, signer)
   const reserves = await lp.getReserves()
-  const marketPrice = reserves[1].div(reserves[0])
+  const marketPrice = reserves[0].div(reserves[1])
   return marketPrice
 }
 
