@@ -5,4 +5,5 @@ cache/
 .secret*
 whitelist.txt
 .vscode/settings.json
+.env
 

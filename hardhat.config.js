@@ -1,12 +1,14 @@
 require('@nomiclabs/hardhat-waffle')
 require('@atixlabs/hardhat-time-n-mine')
 require('@nomiclabs/hardhat-etherscan')
+require('dotenv').config()
 
 const { ethers } = require('ethers')
-const fs = require('fs')
-const dev = fs.readFileSync('.secret').toString().trim()
-const deployer = fs.readFileSync('.secret.mainnet').toString().trim()
-const etherscanApiKey = fs.readFileSync('.secret.etherscan').toString().trim()
+const dev = process.env.DEV_PRIVATE_KEY
+const deployer = process.env.DEPLOYER_PRIVATE_KEY
+const etherscanApiKey = process.env.ETHERSCAN_API_KEY
+const polygonMainnetRPC = process.env.POLYGON_MAINNET_RPC
+const polygonMumbaiRPC = process.env.POLYGON_MUMBAI_RPC
 
 module.exports = {
   solidity: {
@@ -30,13 +32,12 @@ module.exports = {
   },
   networks: {
     'polygon-mainnet': {
-      url: 'https://polygon-rpc.com',
+      url: polygonMainnetRPC,
       accounts: [deployer],
       gasPrice: 35000000000,
-      // gas: 20000000,
     },
     'polygon-mumbai': {
-      url: 'https://polygon-mumbai.infura.io/v3/d7dae60b5e1d40b9b31767b0086aa75d',
+      url: polygonMumbaiRPC,
       accounts: [dev],
       gas: 'auto',
       gasPrice: ethers.utils.parseUnits('1.2', 'gwei').toNumber(),
@@ -47,8 +48,7 @@ module.exports = {
         process.env.NODE_ENV === 'test'
           ? undefined
           : {
-              url: 'https://polygon-mainnet.infura.io/v3/d7dae60b5e1d40b9b31767b0086aa75d',
-              // url: 'https://polygon-rpc.com',
+              url: polygonMainnetRPC,
             },
     },
   },
