@@ -1,6 +1,9 @@
 const { ethers } = require('hardhat')
 const { expect } = require('chai')
 const { BigNumber } = require('@ethersproject/bignumber')
+const { ContractFactory } = require('ethers')
+const UniswapV2FactoryJson = require('@uniswap/v2-core/build/UniswapV2Factory.json')
+const UniswapV2PairJson = require('@uniswap/v2-core/build/UniswapV2Pair.json')
 
 describe('OtterBondingCalculator', () => {
   let // Used as default deployer for contracts, asks as owner of contracts.
@@ -29,8 +32,9 @@ describe('OtterBondingCalculator', () => {
     DAI = await ethers.getContractFactory('DAI')
     dai = await DAI.connect(deployer).deploy(0)
 
-    UniswapV2FactoryContract = await ethers.getContractFactory(
-      'UniswapV2Factory'
+    UniswapV2FactoryContract = ContractFactory.fromSolidity(
+      UniswapV2FactoryJson,
+      deployer
     )
     uniFactory = await UniswapV2FactoryContract.connect(deployer).deploy(
       deployer.address
@@ -38,7 +42,7 @@ describe('OtterBondingCalculator', () => {
 
     await uniFactory.connect(deployer).createPair(clam.address, dai.address)
     pairAddress = await uniFactory.getPair(clam.address, dai.address)
-    UniswapV2Pair = await ethers.getContractFactory('UniswapV2Pair')
+    UniswapV2Pair = ContractFactory.fromSolidity(UniswapV2PairJson, deployer)
     lp = await UniswapV2Pair.attach(pairAddress)
 
     BondingCalcContract = await ethers.getContractFactory(
