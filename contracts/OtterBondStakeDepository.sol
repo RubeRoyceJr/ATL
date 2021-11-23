@@ -80,11 +80,11 @@ contract OtterBondStakeDepository is Ownable {
 
     // Info for bond holder
     struct Bond {
-        uint256 gonsPayout; // sCLAM gons remaining to be paid
         uint256 payout; //clam at the moment of bond
         uint256 vesting; // Blocks left to vest
         uint256 lastTimestamp; // Last interaction
         uint256 pricePaid; // In DAI, for front end viewing
+        uint256 gonsPayout; // sCLAM gons remaining to be paid
     }
 
     // Info for incremental adjustments to control variable
