@@ -121,9 +121,11 @@ describe('OtterBondStakeDepository', () => {
     // await clam.approve(stakingHelper.address, largeApproval)
     await dai.approve(treasury.address, largeApproval)
     await dai.approve(daiBond.address, largeApproval)
+    await dai.connect(depositor).approve(daiBond.address, largeApproval)
 
     // mint 1,000,000 DAI for testing
     await dai.mint(deployer.address, parseEther(String(100 * 10000)))
+    await dai.transfer(depositor.address, parseEther('10000'))
   })
 
   describe('adjust', () => {
@@ -281,6 +283,5 @@ describe('OtterBondStakeDepository', () => {
         daiBond.redeem(deployer.address, false)
       ).to.changeTokenBalance(sClam, deployer, '37750000000')
     })
-
   })
 })

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-import "hardhat/console.sol";
-
 import "./interfaces/IOtterTreasury.sol";
 import "./interfaces/IOtterStaking.sol";
 import "./interfaces/IOtterBondingCalculator.sol";
@@ -328,7 +326,6 @@ contract OtterBondStakeDepository is Ownable {
         require(percentVested >= 10000, "not fully vested"); // if fully vested
         delete bondInfo[_recipient]; // delete user info
         uint256 _amount = IsCLAM(sCLAM).balanceForGons(info.gonsPayout);
-        console.log("redeem amount: %s", _amount);
         emit BondRedeemed(_recipient, _amount, 0); // emit bond data
         IERC20(sCLAM).transfer(_recipient, _amount); // pay user everything due
         return _amount;

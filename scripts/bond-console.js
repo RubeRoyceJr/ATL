@@ -52,16 +52,17 @@ const dai = await DAI.deploy(0)
 await dai.mint('', ethers.utils.parseEther('10000'))
 
 let FraxBond = await ethers.getContractFactory('OtterBondStakeDepository')
-let fraxBond = await fraxBond.deploy( addresses.CLAM_ADDRESS, addresses.sCLAM_ADDRESS, dai.address, addresses.TREASURY_ADDRESS, '0x929a27c46041196e1a49c7b459d63ec9a20cd879', zeroAddress)
-await fraxBond.setStaking(staking.address)
+let fraxBond = FraxBond.attach('0x5Fa0FBDb07Fe9647B43426dcc79da984f0327E4a')
+// let fraxBond = await fraxBond.deploy( addresses.CLAM_ADDRESS, addresses.sCLAM_ADDRESS, dai.address, addresses.TREASURY_ADDRESS, '0x929a27c46041196e1a49c7b459d63ec9a20cd879', zeroAddress)
+// await fraxBond.setStaking(staking.address)
 
-await treasury.queue('0', fraxBond.address)
-await treasury.queue('2', dai.address)
+// await treasury.queue('0', fraxBond.address)
+// await treasury.queue('2', dai.address)
 
 for (var i = 0; i < 43201; i++) { await hre.network.provider.request({ method: 'evm_mine' }); console.log(i); }
 
 await treasury.toggle('0', fraxBond.address, zeroAddress)
-await treasury.toggle('2', dai.address, zeroAddress)
+await treasury.toggle('2', fraxAddr, zeroAddress)
 
 const tokenMinPrice = '5000'
 await fraxBond.initializeBondTerms( '120', 5 * 24 * 3600, tokenMinPrice, '50', '10000', '8000000000000000','0')

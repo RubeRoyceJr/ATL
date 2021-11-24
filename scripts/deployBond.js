@@ -14,6 +14,8 @@ let addresses = {
     MAI: '0xa3Fa99A148fA48D14Ed51d610c367C61876997F1',
     OLD_MAI_CLAM: '0x8094f4C9a4C8AD1FF4c6688d07Bd90f996C7CA21',
     MAI_CLAM: '0x1581802317f32A2665005109444233ca6E3e2D68',
+    FRAX: '0x45c32fa6df82ead1e2ef74d17b76547eddfaff89',
+    FRAX_CLAM: '0x167F06eb4242fe3e5436dB7Ffa06bdE3c18Fc999',
   },
   BONDS: {
     OLD_MAI: '0x28077992bFA9609Ae27458A766470b03D43dEe8A',
@@ -25,8 +27,10 @@ let addresses = {
 }
 
 const zeroAddress = '0x0000000000000000000000000000000000000000'
+const daoAddr = '0x929a27c46041196e1a49c7b459d63ec9a20cd879'
 
-const fraxAddr = '0x45c32fa6df82ead1e2ef74d17b76547eddfaff89'
+const reserveAddr = addresses.RESERVES.FRAX_CLAM
+const isLPBond = true
 
 async function main() {
   const Treasury = await ethers.getContractFactory('OtterTreasury')
@@ -35,37 +39,43 @@ async function main() {
   const OtterBondStakeDepository = await ethers.getContractFactory(
     'OtterBondStakeDepository'
   )
-  // const fraxBond = await OtterBondStakeDepository.deploy(
-  //   addresses.CLAM_ADDRESS,
-  //   addresses.sCLAM_ADDRESS,
-  //   fraxAddr,
-  //   addresses.TREASURY_ADDRESS,
-  //   '0x929a27c46041196e1a49c7b459d63ec9a20cd879',
-  //   zeroAddress
+  // const bond = OtterBondStakeDepository.attach(
+  //   '0x54100c26ABdbF897585E22600C51924D5d3De33c'
   // )
+  const calcAddr = isLPBond ? addresses.CLAM_BONDING_CALC_ADDRESS : zeroAddress
+  const bond = await OtterBondStakeDepository.deploy(
+    addresses.CLAM_ADDRESS,
+    addresses.sCLAM_ADDRESS,
+    reserveAddr,
+    addresses.TREASURY_ADDRESS,
+    daoAddr,
+    calcAddr
+  )
+  await bond.deployTransaction.wait()
+  await (await bond.setStaking(addresses.STAKING_ADDRESS)).wait()
+
+  const queueType = isLPBond ? '4' : '0'
+  await (await treasury.queue(queueType, bond.address)).wait()
+  await (await treasury.queue('5', addresses.RESERVES.FRAX_CLAM)).wait()
+  console.log('Bond deployed at: ' + bond.address)
+
   await hre.run('verify:verify', {
-    address: '0x5Fa0FBDb07Fe9647B43426dcc79da984f0327E4a',
+    address: bond.address,
     constructorArguments: [
       addresses.CLAM_ADDRESS,
       addresses.sCLAM_ADDRESS,
-      fraxAddr,
+      reserveAddr,
       addresses.TREASURY_ADDRESS,
-      '0x929a27c46041196e1a49c7b459d63ec9a20cd879',
-      zeroAddress,
+      daoAddr,
+      calcAddr,
     ],
   })
-  // await fraxBond.deployTransaction.wait()
 
-  // console.log('Frax bond deployed at: ' + fraxBond.address)
 
-  // await (await fraxBond.setStaking(addresses.STAKING_ADDRESS)).wait()
-  await (
-    await treasury.queue('0', '0x5Fa0FBDb07Fe9647B43426dcc79da984f0327E4a')
-  ).wait()
-  await (await treasury.queue('2', fraxAddr)).wait()
+  // await (await treasury.queue('2', reserveAddr)).wait()
 
   // await treasury.toggle('0', daiBond.address, zeroAddress)
-  // await treasury.toggle('2', fraxAddr, zeroAddress)
+  // await treasury.toggle('2', reserveAddr, zeroAddress)
 
   // const tokenMinPrice = '5000'
   // await daiBond.initializeBondTerms(
